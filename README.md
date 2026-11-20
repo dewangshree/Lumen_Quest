@@ -1,210 +1,194 @@
-# Quest - Subscription Management System
+# SubsPro — Subscription Management System
 
-A modern subscription management system built with Next.js and a Stripe-inspired design system.
+A full-stack subscription management platform built for **Lumen Quest 2.0**. Customers can browse plans, subscribe, pause, cancel and download invoices. Admins get a live analytics dashboard plus tools to manage customers, payments and plans.
 
-## 🚀 Features
+**Live demo:** https://dewangshree.github.io/Lumen_Quest/  
+**API:** https://lumen-quest-api.vercel.app
 
-- **Modern UI/UX**: Stripe-inspired design system with premium components
-- **Authentication**: Role-based authentication for customers and admin users
-- **Subscription Management**: Complete subscription lifecycle management
-- **Responsive Design**: Mobile-first responsive design
-- **TypeScript**: Full TypeScript support for type safety
-- **State Management**: Zustand for efficient state management
-
-## 🌐 Live Demo
-
-| Part | URL | Hosting |
-|------|-----|---------|
-| Frontend | https://dewangshree.github.io/Lumen_Quest/ | GitHub Pages (auto-deploys on push to `main`) |
-| Backend API | https://lumen-quest-api.vercel.app | Vercel serverless (Node.js / Express, auto-deploys on push to `main`) |
-| Database | Neon Postgres | Provisioned through Vercel |
-
-**Demo accounts**
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@lumen.com | admin123 |
-| Customer | aman@example.com | password123 |
-| Dataset customers | user1@example.com … user100@example.com | password123 |
-
-Admins see the analytics dashboard and customer management; customers can subscribe to, switch and cancel plans.
-
-### Backend API
-
-| Method | Endpoint | Access |
-|--------|----------|--------|
-| POST | `/api/auth/register`, `/api/auth/login`, `/api/auth/refresh` | Public |
-| GET | `/api/plans`, `/api/plans/:id` | Public |
-| POST/PUT/DELETE | `/api/plans` | Admin |
-| GET/PUT/DELETE | `/api/users/me` | Signed in |
-| GET | `/api/subscriptions/me` · POST `/api/subscriptions` · POST `/api/subscriptions/:id/cancel` | Signed in |
-| GET | `/api/admin/stats`, `/api/admin/customers` · POST `/api/admin/customers` | Admin |
-| GET | `/api/recommendations`, `/api/recommendations/:id` | Public |
-
-### Running locally
-
-```bash
-# Backend (needs the database URL: run `npx vercel env pull .env.local` inside backend/)
-cd backend && npm install && npm run dev        # http://localhost:5000
-npm run db:seed                                  # create tables + sample data (db:reset to start over)
-
-# Frontend
-cd frontend && npm install
-NEXT_PUBLIC_API_URL=http://localhost:5000 npm run dev   # http://localhost:3000
-```
-
-### Deploying
-
-- **Frontend:** push to `main` – the `Deploy frontend to GitHub Pages` workflow builds and publishes it.
-- **Backend:** push to `main` – Vercel builds the `backend/` folder (project root directory is set to `backend`) and deploys it to https://lumen-quest-api.vercel.app.
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Next.js 15.5.3** - React framework with App Router
-- **React 18.2.0** - UI library
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Utility-first CSS framework
-- **Zustand** - State management
-- **React Hook Form** - Form handling and validation
-- **Lucide React** - Modern icon library
-
-### Design System
-- Stripe-inspired color palette
-- Custom component library (Button, Card, Input, Badge, etc.)
-- Consistent typography and spacing
-- Micro-interactions and animations
-
-## 📁 Project Structure
-
-```
-Quest/
-├── frontend/                 # Next.js frontend application
-│   ├── src/
-│   │   ├── app/             # App Router pages
-│   │   ├── components/      # Reusable UI components
-│   │   ├── store/           # Zustand stores
-│   │   └── lib/             # Utility functions
-│   ├── public/              # Static assets
-│   └── ...config files
-├── backend/                 # Backend API (if applicable)
-├── docs/                    # Project documentation
-└── ...config files
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd Quest
-   ```
-
-2. **Install dependencies**
-   ```bash
-   # Install root dependencies
-   npm install
-   
-   # Install frontend dependencies
-   cd frontend
-   npm install
-   ```
-
-3. **Environment Setup**
-   ```bash
-   # Copy environment template
-   cp .env.example .env.local
-   ```
-
-4. **Run the development server**
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-
-5. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-## 🎨 Design System
-
-This project implements a comprehensive design system inspired by Stripe's UI/UX:
-
-### Components
-- **Button**: 5 variants (primary, secondary, outline, ghost, destructive)
-- **Card**: 3 variants with consistent styling
-- **Input**: Form inputs with validation states
-- **Badge**: 6 variants for status indicators
-- **MetricCard**: Dashboard metrics display
-
-### Color Palette
-- Primary: Blue gradient system
-- Secondary: Neutral grays
-- Success/Warning/Error states
-- Premium purple accents
-
-## 🔐 Authentication
-
-The system supports dual-role authentication:
-
-### Customer Users
-- Standard subscription management
-- Billing and payment features
-- Account management
-
-### Admin Users
-- Full system administration
-- Customer management
-- Analytics and reporting
-
-### Demo Credentials
-- **Customer**: customer@example.com / password123
-- **Admin**: admin@example.com / password123
-
-## 📱 Responsive Design
-
-- Mobile-first approach
-- Collapsible sidebar navigation
-- Optimized for all screen sizes
-- Touch-friendly interactions
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-```bash
-npm run build
-vercel --prod
-```
-
-### Docker
-```bash
-docker build -t quest-app .
-docker run -p 3000:3000 quest-app
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Design inspiration from [Stripe](https://stripe.com)
-- UI components inspired by modern design systems
-- Next.js team for the amazing framework
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-Express_5-339933?logo=node.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
 
 ---
 
-Built with ❤️ using Next.js and modern web technologies.
+## Demo accounts
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@lumen.com` | `admin123` |
+| Customer | `aman@example.com` | `password123` |
+| Dataset customers | `user1@example.com` … `user100@example.com` | `password123` |
+
+---
+
+## Features
+
+### Customer portal
+- **Overview:** current plan, days remaining, total spent, and payment count
+- **Smart suggestions:** cheaper long-term plans, more sessions per rupee, renewal reminders, and alerts for unpaid bills, all computed from the customer's own data
+- **Subscription control:** subscribe, switch plan, pause (remaining days are kept), resume, cancel
+- **Billing:** full payment history with filters, "Pay now" for pending or failed bills, and PDF invoice download
+- **Profile:** edit name and phone; change password (current password required)
+
+### Admin console
+- **Analytics dashboard:** revenue, customers, active subscriptions, churn rate, ARPU and failed payments, plus charts for revenue by month, new vs churned subscriptions and plan distribution, top customers, recent billing activity, and CSV export
+- **Customers:** search, status filter, pagination, and add customer (generates a temporary password)
+- **Customer detail:** subscription and bill history; pause, resume or cancel; change plan; mark bills paid; mark the customer active or inactive
+- **Payments:** every bill across customers, filter by paid, pending or failed, mark as paid, CSV export
+- **Plan management:** create, edit, activate or deactivate, and delete plans (plans with subscription history are protected)
+
+### Platform
+- JWT authentication with refresh tokens and role-based access (`user` / `admin`) on both the API and the UI
+- Data persisted in PostgreSQL (Neon), seeded from the Lumen Quest dataset (`SubscriptionUseCase_Dataset.xlsx`)
+- Responsive layout, from a collapsible sidebar on desktop to an overlay menu on mobile
+- Auto-deploys on every push to `main`
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 15 (App Router, static export), React 18, TypeScript, Tailwind CSS, Zustand, React Hook Form, Recharts, jsPDF, Lucide icons |
+| Backend | Node.js, Express 5, `pg`, bcryptjs, jsonwebtoken |
+| Database | PostgreSQL on Neon (provisioned through Vercel) |
+| Hosting | GitHub Pages (frontend), Vercel serverless (backend) |
+| CI/CD | GitHub Actions (frontend), Vercel Git integration (backend) |
+
+---
+
+## Project structure
+
+```
+Lumen_Quest/
+├── frontend/                     # Next.js app
+│   └── src/
+│       ├── app/                  # Pages (one folder per route)
+│       │   ├── account/          #   customer overview
+│       │   ├── billing/          #   customer billing & invoices
+│       │   ├── profile/          #   profile & password
+│       │   ├── subscribe/        #   plan catalogue & checkout
+│       │   ├── dashboard/        #   admin analytics
+│       │   ├── customers/        #   admin customer list
+│       │   ├── customer/         #   admin customer detail (?id=)
+│       │   ├── payments/         #   admin payments
+│       │   ├── plans/            #   admin plan management
+│       │   └── login, signup, forgot-password, …
+│       ├── components/           # UI kit, layout (sidebar/header), auth guard
+│       ├── lib/                  # API client, invoice PDF, utils
+│       └── store/                # Zustand stores (auth, UI)
+├── backend/                      # Express API
+│   ├── api/index.js              # Vercel serverless entry
+│   ├── app.js                    # Express app (routes, CORS, health)
+│   ├── server.js                 # Local dev server
+│   ├── scripts/seed.js           # Create schema + load sample data
+│   └── src/
+│       ├── controllers/          # Route handlers
+│       ├── routes/               # auth, users, plans, subscriptions, admin, recommendations
+│       ├── middleware/auth.js    # JWT + role checks
+│       ├── database/             # schema.sql, pool, data-access layer (repo.js)
+│       ├── services/             # Recommendation engine (dataset based)
+│       └── data/dataset.json     # Exported from the Excel dataset
+├── .github/workflows/            # GitHub Pages deploy
+└── SubscriptionUseCase_Dataset.xlsx
+```
+
+---
+
+## Getting started (local)
+
+**Prerequisites:** Node.js 18+ and a PostgreSQL database (the project uses Neon).
+
+### 1. Backend
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env.local`. For the existing Vercel project, `npx vercel env pull .env.local` fills it in.
+
+```env
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+JWT_SECRET=any-long-random-string
+JWT_REFRESH_SECRET=another-long-random-string
+```
+
+```bash
+npm run db:seed     # create tables + sample data (skips if data exists)
+npm run db:reset    # drop everything and reseed
+npm run dev         # http://localhost:5000
+```
+
+### 2. Frontend
+
+```bash
+cd frontend
+npm install
+NEXT_PUBLIC_API_URL=http://localhost:5000 npm run dev   # http://localhost:3000
+```
+
+Without `NEXT_PUBLIC_API_URL` the frontend talks to the live API.
+
+---
+
+## API reference
+
+Base URL: `https://lumen-quest-api.vercel.app`. Authenticated routes need `Authorization: Bearer <accessToken>`.
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| POST | `/api/auth/register` | Public | Create a customer account |
+| POST | `/api/auth/login` | Public | Returns access + refresh tokens |
+| POST | `/api/auth/refresh` | Public | New access token from refresh token |
+| GET | `/api/plans` · `/api/plans/:id` | Public | List / get plans |
+| POST · PUT · DELETE | `/api/plans` · `/api/plans/:id` | Admin | Manage plans |
+| GET · PUT · DELETE | `/api/users/me` | Signed in | Profile, update (password needs `current_password`), delete |
+| GET | `/api/subscriptions/me` | Signed in | My subscriptions |
+| GET | `/api/subscriptions/me/summary` | Signed in | Overview + suggestions |
+| GET | `/api/subscriptions/me/billing` | Signed in | My bills |
+| POST | `/api/subscriptions/me/billing/:id/pay` | Signed in | Pay a pending/failed bill |
+| POST | `/api/subscriptions` | Signed in | Subscribe / switch plan (`plan_id`) |
+| POST | `/api/subscriptions/:id/pause` · `resume` · `cancel` | Signed in | Manage my subscription |
+| GET | `/api/admin/stats` | Admin | Dashboard metrics |
+| GET · POST | `/api/admin/customers` | Admin | List / create customers |
+| GET · PATCH | `/api/admin/customers/:id` | Admin | Customer detail / set status |
+| POST | `/api/admin/customers/:id/subscription` | Admin | Assign or change plan |
+| POST | `/api/admin/subscriptions/:id/:action` | Admin | `pause` / `resume` / `cancel` |
+| GET | `/api/admin/billing?status=` | Admin | All bills |
+| POST | `/api/admin/billing/:id/mark-paid` | Admin | Mark bill paid |
+| GET | `/api/admin/plans` | Admin | Plans with subscriber counts |
+| GET | `/api/recommendations` · `/:id` | Public | Dataset-based recommendations |
+| GET | `/api/health` | Public | API + database health |
+
+---
+
+## Deployment
+
+| Part | Where | How |
+|------|-------|-----|
+| Frontend | GitHub Pages | Push to `main` → `.github/workflows/deploy-frontend.yml` builds a static export and publishes it |
+| Backend | Vercel (`lumen-quest-api`) | Push to `main` → Vercel builds the `backend/` folder (project root directory = `backend`) |
+| Database | Neon Postgres | Connected to the Vercel project; `DATABASE_URL` is injected automatically |
+
+Secrets (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `DATABASE_URL`) live in the Vercel project's environment variables and are never committed.
+
+---
+
+## Sample data
+
+`npm run db:reset` loads:
+- 5 plans (Monthly, Quarterly, Yearly, Postpaid, Top-up)
+- the demo admin and 4 demo customers
+- 100 users, 100 subscriptions and 100 bills from `SubscriptionUseCase_Dataset.xlsx`
+
+Dataset dates are shifted so the latest record falls on today. The dataset's 100 product IDs are mapped onto the 5 plans, and active subscriptions whose end date has passed are marked expired.
+
+---
+
+## Known limitations
+
+- **Payments are simulated.** Checkout records a payment but no money is charged. A real gateway such as Razorpay or Stripe would be the next step.
+- **No password-reset emails.** There is no email service yet, so admins issue new temporary passwords instead.
