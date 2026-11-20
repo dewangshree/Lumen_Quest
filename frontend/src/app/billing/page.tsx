@@ -91,9 +91,9 @@ function BillingContent() {
       )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        <Card><CardContent className="p-6"><p className="text-sm text-gray-600">Total paid</p><p className="text-2xl font-bold text-green-600">{formatINR(totals.paid)}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-gray-600">Outstanding</p><p className={`text-2xl font-bold ${totals.outstanding ? 'text-red-600' : 'text-gray-900'}`}>{formatINR(totals.outstanding)}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-gray-600">Bills</p><p className="text-2xl font-bold text-gray-900">{totals.count}</p></CardContent></Card>
+        <Card><CardContent><p className="text-sm text-gray-600">Total paid</p><p className="text-2xl font-bold text-green-600">{formatINR(totals.paid)}</p></CardContent></Card>
+        <Card><CardContent><p className="text-sm text-gray-600">Outstanding</p><p className={`text-2xl font-bold ${totals.outstanding ? 'text-red-600' : 'text-gray-900'}`}>{formatINR(totals.outstanding)}</p></CardContent></Card>
+        <Card><CardContent><p className="text-sm text-gray-600">Bills</p><p className="text-2xl font-bold text-gray-900">{totals.count}</p></CardContent></Card>
       </div>
 
       <Card>

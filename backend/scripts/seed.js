@@ -8,6 +8,9 @@
 //   - 100 users, subscriptions and billing records from SubscriptionUseCase_Dataset.xlsx
 //     (dataset users log in as user<N>@example.com / password123). The dataset's 100
 //     product ids are mapped onto the 5 plans as ((productId - 1) % 5).
+//     Dataset dates (Dec 2023 – Nov 2024) are shifted forward so the latest record falls on
+//     today; a subscription's end date is its last renewal (or start) plus its billing period,
+//     and "active" subscriptions whose end date has passed are stored as "expired".
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -68,7 +71,7 @@ async function main() {
       (await client.query(
         `INSERT INTO subscriptions (user_id, plan_id, type, status, start_date, end_date, last_billed_date, last_renewed_date, terminated_date, grace_time)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING sub_id`,
-        [userId, planId, type, status, start, addDays(start, type === 'yearly' ? 365 : 30),
+        [userId, planId, type, status, start, extra.end || addDays(start, type === 'yearly' ? 365 : 30),
           orNull(extra.lastBilled), orNull(extra.lastRenewed), orNull(extra.terminated), extra.grace || 5]
       )).rows[0].sub_id;
     const insertBill = (subId, amount, date, status, method, txn) =>
@@ -93,6 +96,12 @@ async function main() {
       await insertBill(sid, plans[planIdx][1], start, 'paid', ['credit_card', 'upi', 'debit_card'][i % 3], `TXN00${i + 1}`);
     }
 
+    // Shift dataset dates so the most recent record lands on today
+    const latest = [...dataset.Billing_Information.map((b) => b.billing_date), ...dataset.Subscriptions.map((x) => x['Start Date'])]
+      .filter(Boolean).sort().pop();
+    const shiftDays = Math.round((new Date(today) - new Date(latest)) / 86400000);
+    const shift = (d) => (d ? addDays(d, shiftDays) : null);
+
     // Dataset users
     const userMap = new Map();
     for (const u of dataset.User_Data) {
@@ -106,12 +115,17 @@ async function main() {
       const uid = userMap.get(Number(s['User Id']));
       if (!uid) continue;
       const raw = String(s.Status).toLowerCase();
-      const status = ['active', 'paused', 'expired', 'cancelled'].includes(raw) ? raw : 'active';
+      let status = ['active', 'paused', 'expired', 'cancelled'].includes(raw) ? raw : 'active';
       const planId = planIds[(Number(s['Product Id']) - 1) % planIds.length];
       const type = String(s['Subscription Type']).toLowerCase() === 'yearly' ? 'yearly' : 'monthly';
-      subMap.set(Number(s['Subscription Id']), await insertSub(uid, planId, type, status, s['Start Date'], {
-        lastBilled: s['Last Billed Date'], lastRenewed: s['Last Renewed Date'],
-        terminated: s['Terminated Date'], grace: Number(s['Grace Time']) || 5,
+      const start = shift(s['Start Date']);
+      const lastRenewed = shift(s['Last Renewed Date']);
+      const periodStart = lastRenewed && lastRenewed > start ? lastRenewed : start;
+      const end = addDays(periodStart, type === 'yearly' ? 365 : 30);
+      if (status === 'active' && end < today) status = 'expired';
+      subMap.set(Number(s['Subscription Id']), await insertSub(uid, planId, type, status, start, {
+        end, lastBilled: shift(s['Last Billed Date']), lastRenewed,
+        terminated: shift(s['Terminated Date']), grace: Number(s['Grace Time']) || 5,
       }));
     }
 
@@ -121,7 +135,7 @@ async function main() {
       const sid = subMap.get(Number(b.subscription_id));
       if (!sid) continue;
       const st = String(b.payment_status).toLowerCase();
-      await insertBill(sid, b.amount, b.billing_date, ['paid', 'pending', 'failed'].includes(st) ? st : 'pending', 'credit_card', `DS-${b.billing_id}`);
+      await insertBill(sid, b.amount, shift(b.billing_date), ['paid', 'pending', 'failed'].includes(st) ? st : 'pending', 'credit_card', `DS-${b.billing_id}`);
       bills++;
     }
 

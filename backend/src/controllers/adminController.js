@@ -26,3 +26,65 @@ exports.createCustomer = handle(async (req, res) => {
 
   res.status(201).json({ message: 'Customer created', userId, tempPassword, subscription });
 });
+
+// GET /api/admin/customers/:id
+exports.customerDetail = handle(async (req, res) => {
+  const detail = await repo.getCustomerDetail(req.params.id);
+  if (!detail) return res.status(404).json({ message: 'Customer not found' });
+  res.json(detail);
+});
+
+// PATCH /api/admin/customers/:id  { status: 'active' | 'inactive' }
+exports.updateCustomer = handle(async (req, res) => {
+  const { status } = req.body || {};
+  if (!['active', 'inactive'].includes(status)) return res.status(400).json({ message: 'status must be active or inactive' });
+  const detail = await repo.getCustomerDetail(req.params.id);
+  if (!detail) return res.status(404).json({ message: 'Customer not found' });
+  await repo.updateUser(req.params.id, { status });
+  res.json({ message: `Customer marked ${status}` });
+});
+
+// POST /api/admin/customers/:id/subscription  { plan_id }
+exports.assignPlan = handle(async (req, res) => {
+  const { plan_id } = req.body || {};
+  if (!plan_id) return res.status(400).json({ message: 'plan_id is required' });
+  const detail = await repo.getCustomerDetail(req.params.id);
+  if (!detail) return res.status(404).json({ message: 'Customer not found' });
+  const { subscription } = await repo.subscribe(req.params.id, plan_id, { paymentMethod: 'cash' });
+  res.status(201).json({ message: `Customer moved to ${subscription.plan_name}`, subscription });
+});
+
+// POST /api/admin/subscriptions/:id/(pause|resume|cancel)
+const ACTIONS = { pause: 'pauseSubscription', resume: 'resumeSubscription', cancel: 'cancelSubscription' };
+const PAST = { pause: 'paused', resume: 'resumed', cancel: 'cancelled' };
+exports.subscriptionAction = handle(async (req, res) => {
+  const fn = ACTIONS[req.params.action];
+  if (!fn) return res.status(404).json({ message: 'Unknown action' });
+  const owner = await repo.getSubscriptionOwner(req.params.id);
+  if (!owner) return res.status(404).json({ message: 'Subscription not found' });
+  const ok = await repo[fn](owner, req.params.id);
+  if (!ok) return res.status(409).json({ message: `Subscription cannot be ${PAST[req.params.action]} in its current state` });
+  res.json({ message: `Subscription ${PAST[req.params.action]}` });
+});
+
+// GET /api/admin/billing?status=paid|pending|failed
+exports.billing = handle(async (req, res) => {
+  const status = ['paid', 'pending', 'failed'].includes(req.query.status) ? req.query.status : undefined;
+  res.json(await repo.getAllBills({ status }));
+});
+
+// POST /api/admin/billing/:id/mark-paid  { payment_method? }
+exports.markPaid = handle(async (req, res) => {
+  const allowed = ['credit_card', 'debit_card', 'upi', 'cash'];
+  const method = allowed.includes((req.body || {}).payment_method) ? req.body.payment_method : 'cash';
+  const ok = await repo.markBillPaid(req.params.id, method);
+  if (!ok) return res.status(404).json({ message: 'Unpaid bill not found' });
+  res.json({ message: 'Bill marked as paid' });
+});
+
+// GET /api/admin/plans  (plans with subscriber counts, including inactive plans)
+exports.plans = handle(async (req, res) => {
+  const [plans, usage] = await Promise.all([repo.getAllPlans(), repo.getPlanUsage()]);
+  const byId = new Map(usage.map((u) => [u.plan_id, u]));
+  res.json(plans.map((p) => ({ ...p, ...(byId.get(p.plan_id) || { active_subscribers: 0, total_subscriptions: 0 }) })));
+});

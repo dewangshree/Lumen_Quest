@@ -12,7 +12,7 @@ const badRequest = (message) => Object.assign(new Error(message), { status: 400 
 function mapPgError(e) {
   if (e.code === '23505') return conflict('Email already registered');
   if (e.code === '23514' || e.code === '22P02') return badRequest('Invalid value: ' + (e.constraint || e.message));
-  if (e.code === '23503') return conflict('Record is still referenced by other data');
+  if (e.code === '23503' || e.code === '23001') return conflict('Record is still referenced by other data');
   return e;
 }
 const safe = (fn) => async (...args) => {
@@ -316,10 +316,45 @@ const getStats = safe(async () => {
   };
 });
 
+// ---------------- Admin: single customer, billing ----------------
+const getCustomerDetail = safe(async (userId) => {
+  const user = await getUserById(userId);
+  if (!user || user.role !== 'user') return null;
+  const subscriptions = await getSubscriptionsForUser(userId);
+  const bills = await getBillingForUser(userId);
+  return { user, subscriptions, bills };
+});
+
+const getSubscriptionOwner = safe(async (subId) =>
+  ((await query('SELECT user_id FROM subscriptions WHERE sub_id = $1', [subId]))[0] || {}).user_id || null);
+
+const getAllBills = safe(async ({ status } = {}) => query(`
+  SELECT b.billing_id, b.amount, b.billing_date, b.payment_status, b.payment_method, b.transaction_id,
+         u.user_id, u.name, u.email, p.plan_name
+  FROM billing b JOIN subscriptions s ON s.sub_id = b.sub_id
+  JOIN users u ON u.user_id = s.user_id JOIN plans p ON p.plan_id = s.plan_id
+  ${status ? 'WHERE b.payment_status = $1' : ''}
+  ORDER BY b.billing_date DESC, b.billing_id DESC`, status ? [status] : []));
+
+const markBillPaid = safe(async (billingId, method = 'cash') =>
+  (await query(
+    `UPDATE billing SET payment_status = 'paid', payment_method = $2,
+            transaction_id = COALESCE(transaction_id, '') || '-ADMIN'
+      WHERE billing_id = $1 AND payment_status IN ('pending', 'failed') RETURNING billing_id`,
+    [billingId, method]
+  )).length > 0);
+
+const getPlanUsage = safe(async () => query(`
+  SELECT p.plan_id,
+         COUNT(s.sub_id) FILTER (WHERE s.status IN ('active', 'paused')) AS active_subscribers,
+         COUNT(s.sub_id) AS total_subscriptions
+  FROM plans p LEFT JOIN subscriptions s ON s.plan_id = p.plan_id GROUP BY p.plan_id`));
+
 module.exports = {
   findUserByEmail, createUser, getUserById, getAllUsers, updateUser, deleteUser,
   getAllPlans, getPlanById, createPlan, updatePlan, deletePlan,
   getSubscriptionsForUser, subscribe, cancelSubscription,
   pauseSubscription, resumeSubscription, getBillingForUser, getCustomerSummary, payBill, getUserPasswordHash,
   getCustomers, getStats,
+  getCustomerDetail, getSubscriptionOwner, getAllBills, markBillPaid, getPlanUsage,
 };

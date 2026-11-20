@@ -18,7 +18,7 @@ export function Header() {
   const { toggleSidebar } = useUIStore()
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-30">
+    <header className="h-16 bg-white/80 backdrop-blur border-b border-gray-200/80 sticky top-0 z-30">
       <div className="h-full flex items-center justify-between px-6">
         <div className="flex items-center space-x-4 flex-1">
           <button

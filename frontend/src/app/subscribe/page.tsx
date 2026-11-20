@@ -226,7 +226,7 @@ function SubscribeContent() {
         >
           <ModalBody>
             <div className="space-y-5">
-              <div className="flex items-center justify-between rounded-lg bg-blue-50 p-4">
+              <div className="flex items-center justify-between rounded-lg bg-primary-50 p-4">
                 <div>
                   <div className="font-semibold">{selectedPlan.plan_name}</div>
                   <div className="text-sm text-gray-600">{selectedPlan.validity_days} days · {selectedPlan.quota_sessions} sessions</div>

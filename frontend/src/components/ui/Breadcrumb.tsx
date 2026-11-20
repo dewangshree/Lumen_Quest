@@ -51,7 +51,7 @@ export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
   );
 }
 
-const LABELS: Record<string, string> = { subscribe: 'Plans', account: 'Overview', billing: 'Billing', profile: 'Profile', dashboard: 'Dashboard', customers: 'Customers' };
+const LABELS: Record<string, string> = { subscribe: 'Plans', plans: 'Plans', payments: 'Payments', customer: 'Customer', account: 'Overview', billing: 'Billing', profile: 'Profile', dashboard: 'Dashboard', customers: 'Customers' };
 
 function generateBreadcrumbs(pathname: string | null, homeHref: string): BreadcrumbItem[] {
   if (!pathname) return [];

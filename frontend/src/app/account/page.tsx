@@ -17,8 +17,8 @@ const recStyle: Record<Recommendation['type'], string> = {
   renew: 'border-amber-200 bg-amber-50',
   resume: 'border-amber-200 bg-amber-50',
   save: 'border-green-200 bg-green-50',
-  upgrade: 'border-blue-200 bg-blue-50',
-  start: 'border-blue-200 bg-blue-50',
+  upgrade: 'border-primary-200 bg-primary-50',
+  start: 'border-primary-200 bg-primary-50',
 };
 
 function AccountContent() {
@@ -105,7 +105,7 @@ function AccountContent() {
               { label: 'Payments made', value: String(data.paid_count), icon: Receipt, tone: 'bg-amber-100 text-amber-600' },
             ].map(({ label, value, icon: Icon, tone }) => (
               <Card key={label}>
-                <CardContent className="flex items-center gap-4 p-6">
+                <CardContent className="flex items-center gap-4">
                   <div className={`rounded-lg p-3 ${tone}`}><Icon className="h-6 w-6" /></div>
                   <div className="min-w-0">
                     <p className="text-sm text-gray-600">{label}</p>

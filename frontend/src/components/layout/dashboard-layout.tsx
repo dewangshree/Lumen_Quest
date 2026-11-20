@@ -14,11 +14,13 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname() || '' // fallback to empty string
-  const { sidebarOpen } = useUIStore()
+  const { sidebarOpen, setSidebarOpen } = useUIStore()
   const hydrate = useAuthStore((s) => s.hydrate)
 
   // Restore the saved login session on first load
   useEffect(() => { hydrate() }, [hydrate])
+  // Expanded sidebar on desktop, collapsed (overlay) on mobile
+  useEffect(() => { if (window.innerWidth >= 1024) setSidebarOpen(true) }, [setSidebarOpen])
 
   // Don't show layout for auth pages
   const isAuthPage =
@@ -31,7 +33,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <Sidebar />
       <div
         className={cn(

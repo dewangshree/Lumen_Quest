@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Modal, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import { RequireAuth } from '@/components/auth/RequireAuth';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { api, formatINR, type Customer, type Plan } from '@/lib/api';
 
 const PAGE_SIZE = 10;
@@ -28,7 +30,7 @@ function CustomersContent() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<Customer | null>(null);
+  const router = useRouter();
 
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', plan_id: '' });
@@ -126,7 +128,7 @@ function CustomersContent() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((s) => (
           <Card key={s.label}>
-            <CardContent className="p-6">
+            <CardContent>
               <div className="flex items-center">
                 <div className={`p-2 rounded-lg ${s.bg}`}><span className="text-2xl">{s.icon}</span></div>
                 <div className="ml-4">
@@ -191,7 +193,7 @@ function CustomersContent() {
                     {pageRows.map((c) => (
                       <tr key={c.id} className="hover:bg-gray-50">
                         <td className="px-3 py-3">
-                          <div className="font-medium text-gray-900">{c.name}</div>
+                          <Link href={`/customer?id=${c.id}`} className="font-medium text-gray-900 hover:text-primary-700">{c.name}</Link>
                           <div className="text-gray-500">{c.email}</div>
                         </td>
                         <td className="px-3 py-3">{c.subscription || '—'}</td>
@@ -203,7 +205,7 @@ function CustomersContent() {
                         <td className="px-3 py-3 text-right tabular-nums">{formatINR(c.total_spent)}</td>
                         <td className="px-3 py-3">{formatDate(c.last_payment)}</td>
                         <td className="px-3 py-3 text-right">
-                          <Button size="sm" variant="secondary" onClick={() => setSelected(c)}>View</Button>
+                          <Button size="sm" variant="secondary" onClick={() => router.push(`/customer?id=${c.id}`)}>View</Button>
                         </td>
                       </tr>
                     ))}
@@ -254,26 +256,6 @@ function CustomersContent() {
         </ModalFooter>
       </Modal>
 
-      {/* Customer details */}
-      {selected && (
-        <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected.name} description={selected.email} size="md">
-          <ModalBody>
-            <dl className="grid grid-cols-2 gap-4 text-sm">
-              <div><dt className="text-gray-500">Current plan</dt><dd className="text-base">{selected.subscription || '—'}</dd></div>
-              <div><dt className="text-gray-500">Subscription status</dt><dd className="text-base capitalize">{selected.subscription_status || 'None'}</dd></div>
-              <div><dt className="text-gray-500">Subscribed since</dt><dd className="text-base">{formatDate(selected.start_date)}</dd></div>
-              <div><dt className="text-gray-500">Last payment</dt><dd className="text-base">{formatDate(selected.last_payment)}</dd></div>
-              <div><dt className="text-gray-500">Total spent</dt><dd className="text-base font-semibold text-green-600">{formatINR(selected.total_spent)}</dd></div>
-              <div><dt className="text-gray-500">Account</dt><dd className="text-base capitalize">{selected.account_status}</dd></div>
-              <div><dt className="text-gray-500">Phone</dt><dd className="text-base">{selected.phone || '—'}</dd></div>
-              <div><dt className="text-gray-500">Joined</dt><dd className="text-base">{formatDate(selected.created_at)}</dd></div>
-            </dl>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="secondary" onClick={() => setSelected(null)}>Close</Button>
-          </ModalFooter>
-        </Modal>
-      )}
     </div>
   );
 }

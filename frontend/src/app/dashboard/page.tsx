@@ -7,12 +7,13 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { api, formatINR, type Stats } from '@/lib/api';
 import { RefreshCw } from 'lucide-react';
+import Link from 'next/link';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 
-const PLAN_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4'];
+const PLAN_COLORS = ['#0d9488', '#6366f1', '#f59e0b', '#e11d48', '#0ea5e9', '#8b5cf6'];
 
 const monthLabel = (ym: string) => {
   const [y, m] = ym.split('-').map(Number);
@@ -128,7 +129,7 @@ function DashboardContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {kpiCards.map((k) => (
             <Card key={k.label}>
-              <CardContent className="p-6">
+              <CardContent>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">{k.label}</p>
@@ -152,7 +153,7 @@ function DashboardContent() {
                   <XAxis dataKey="month" />
                   <YAxis />
                   <Tooltip formatter={(value) => [formatINR(Number(value)), 'Revenue']} />
-                  <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.1} />
+                  <Area type="monotone" dataKey="revenue" stroke="#0d9488" strokeWidth={2} fill="#14b8a6" fillOpacity={0.12} />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -168,8 +169,8 @@ function DashboardContent() {
                   <YAxis allowDecimals={false} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="new" fill="#10B981" name="New" />
-                  <Bar dataKey="churned" fill="#EF4444" name="Churned" />
+                  <Bar dataKey="new" fill="#14b8a6" name="New" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="churned" fill="#f43f5e" name="Churned" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -221,7 +222,7 @@ function DashboardContent() {
                 {stats.topCustomers.map((c) => (
                   <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <div className="font-medium">{c.name}</div>
+                      <Link href={`/customer?id=${c.id}`} className="font-medium hover:text-primary-700">{c.name}</Link>
                       <div className="text-sm text-gray-500">{c.plan || '—'}</div>
                     </div>
                     <div className="font-semibold tabular-nums">{formatINR(c.total_spent)}</div>
@@ -233,7 +234,12 @@ function DashboardContent() {
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Recent Billing Activity</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Billing Activity</CardTitle>
+              <Link href="/payments" className="text-sm font-medium text-primary-600 hover:text-primary-700">View all payments →</Link>
+            </div>
+          </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {stats.recentActivity.map((a) => (

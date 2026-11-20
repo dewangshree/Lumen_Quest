@@ -121,7 +121,7 @@ function ProfileContent() {
       </Card>
 
       <Card>
-        <CardContent className="flex items-center justify-between p-6">
+        <CardContent className="flex items-center justify-between">
           <div>
             <p className="font-medium text-gray-900">Sign out</p>
             <p className="text-sm text-gray-600">End your session on this device.</p>

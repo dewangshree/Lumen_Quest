@@ -13,7 +13,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     const baseStyles = 'bg-white rounded-xl border transition-all duration-200'
     
     const variants = {
-      default: 'border-gray-200 shadow-sm hover:shadow-md',
+      default: 'border-gray-200/80 shadow-sm',
       elevated: 'border-gray-200 shadow-lg hover:shadow-xl',
       outlined: 'border-gray-300 shadow-none hover:border-gray-400',
     }

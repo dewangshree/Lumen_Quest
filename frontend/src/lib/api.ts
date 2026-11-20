@@ -105,6 +105,28 @@ export interface CustomerSummary {
   recommendations: Recommendation[]
 }
 
+export interface AdminBill {
+  billing_id: number
+  amount: number
+  billing_date: string
+  payment_status: 'paid' | 'pending' | 'failed'
+  payment_method: string
+  transaction_id: string | null
+  user_id: number
+  name: string
+  email: string
+  plan_name: string
+}
+
+export interface CustomerDetail {
+  user: ApiUser & { created_at: string }
+  subscriptions: Subscription[]
+  bills: Bill[]
+}
+
+export type AdminPlan = Plan & { active_subscribers: number; total_subscriptions: number }
+export type PlanInput = Pick<Plan, 'plan_name' | 'price' | 'quota_sessions' | 'validity_days' | 'auto_renewal_allowed' | 'description' | 'status'>
+
 export class ApiError extends Error {
   constructor(message: string, public status: number) {
     super(message)
@@ -213,6 +235,22 @@ export const api = {
 
   stats: () => request<Stats>('/api/admin/stats', { auth: true }),
   customers: () => request<Customer[]>('/api/admin/customers', { auth: true }),
+  customerDetail: (id: number) => request<CustomerDetail>(`/api/admin/customers/${id}`, { auth: true }),
+  setCustomerStatus: (id: number, status: 'active' | 'inactive') =>
+    request<{ message: string }>(`/api/admin/customers/${id}`, { method: 'PATCH', body: { status }, auth: true }),
+  assignPlan: (id: number, plan_id: number) =>
+    request<{ message: string }>(`/api/admin/customers/${id}/subscription`, { method: 'POST', body: { plan_id }, auth: true }),
+  adminSubscriptionAction: (subId: number, action: 'pause' | 'resume' | 'cancel') =>
+    request<{ message: string }>(`/api/admin/subscriptions/${subId}/${action}`, { method: 'POST', auth: true }),
+  adminBilling: (status?: string) =>
+    request<AdminBill[]>(`/api/admin/billing${status && status !== 'all' ? `?status=${status}` : ''}`, { auth: true }),
+  markBillPaid: (billingId: number, payment_method = 'cash') =>
+    request<{ message: string }>(`/api/admin/billing/${billingId}/mark-paid`, { method: 'POST', body: { payment_method }, auth: true }),
+  adminPlans: () => request<AdminPlan[]>('/api/admin/plans', { auth: true }),
+  createPlan: (data: PlanInput) => request<{ planId: number }>('/api/plans', { method: 'POST', body: data, auth: true }),
+  updatePlan: (id: number, data: Partial<PlanInput>) =>
+    request<{ message: string }>(`/api/plans/${id}`, { method: 'PUT', body: data, auth: true }),
+  deletePlan: (id: number) => request<{ message: string }>(`/api/plans/${id}`, { method: 'DELETE', auth: true }),
   createCustomer: (data: { name: string; email: string; phone?: string; plan_id?: number }) =>
     request<{ userId: number; tempPassword: string }>('/api/admin/customers', { method: 'POST', body: data, auth: true }),
 }
