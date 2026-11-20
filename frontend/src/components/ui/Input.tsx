@@ -62,8 +62,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           />
           
           {rightIcon && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <div className="h-5 w-5 text-gray-400">
+            {/* Clickable (e.g. show/hide password toggle), so no pointer-events-none here */}
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <div className="h-5 w-5 flex items-center justify-center text-gray-400">
                 {rightIcon}
               </div>
             </div>
