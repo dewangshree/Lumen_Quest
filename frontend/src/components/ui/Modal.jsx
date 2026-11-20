@@ -7,12 +7,12 @@ const Modal = ({
   isOpen,
   onClose,
   children,
-  title,
-  description,
+  title = '',
+  description = '',
   size = 'md',
   showCloseButton = true,
   closeOnOverlayClick = true,
-  className,
+  className = '',
 }) => {
   const sizeClasses = {
     sm: 'max-w-md',
@@ -94,19 +94,19 @@ const Modal = ({
   );
 };
 
-const ModalHeader = ({ children, className }) => (
+const ModalHeader = ({ children, className = '' }) => (
   <div className={cn('mb-4', className)}>
     {children}
   </div>
 );
 
-const ModalBody = ({ children, className }) => (
+const ModalBody = ({ children, className = '' }) => (
   <div className={cn('mb-6', className)}>
     {children}
   </div>
 );
 
-const ModalFooter = ({ children, className }) => (
+const ModalFooter = ({ children, className = '' }) => (
   <div className={cn('flex justify-end space-x-2 pt-4 border-t border-gray-200', className)}>
     {children}
   </div>

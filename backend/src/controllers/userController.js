@@ -1,71 +1,43 @@
-const db = require('../models/db');
 const bcrypt = require('bcryptjs');
+const repo = require('../database/repo');
+
+const handle = require('../utils/handle');
 
 // Get my profile
-exports.getMyProfile = async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT user_id, name, email, phone, role, status, created_at, updated_at FROM Users WHERE user_id = ?', [req.user.id]);
-    if (!rows.length) return res.status(404).json({ message: 'User not found' });
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+exports.getMyProfile = handle(async (req, res) => {
+  const user = await repo.getUserById(req.user.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json(user);
+});
 
 // Update my profile
-exports.updateMyProfile = async (req, res) => {
-  try {
-    const { name, phone, password } = req.body;
+exports.updateMyProfile = handle(async (req, res) => {
+  const { name, phone, password } = req.body || {};
+  const fields = {};
+  if (name) fields.name = name;
+  if (phone) fields.phone = phone;
+  if (password) fields.password_hash = await bcrypt.hash(password, 10);
+  if (!Object.keys(fields).length) return res.status(400).json({ message: 'Nothing to update' });
 
-    let query = 'UPDATE Users SET ';
-    const params = [];
-    
-    if (name) { query += 'name = ?, '; params.push(name); }
-    if (phone) { query += 'phone = ?, '; params.push(phone); }
-    if (password) {
-      const password_hash = await bcrypt.hash(password, 10);
-      query += 'password_hash = ?, '; 
-      params.push(password_hash);
-    }
-
-    query = query.slice(0, -2); // Remove trailing comma
-    query += ' WHERE user_id = ?';
-    params.push(req.user.id);
-
-    await db.query(query, params);
-    res.json({ message: 'Profile updated successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+  const ok = await repo.updateUser(req.user.id, fields);
+  if (!ok) return res.status(404).json({ message: 'User not found' });
+  res.json({ message: 'Profile updated successfully' });
+});
 
 // Delete my account
-exports.deleteMyAccount = async (req, res) => {
-  try {
-    await db.query('DELETE FROM Users WHERE user_id = ?', [req.user.id]);
-    res.json({ message: 'Account deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+exports.deleteMyAccount = handle(async (req, res) => {
+  await repo.deleteUser(req.user.id);
+  res.json({ message: 'Account deleted successfully' });
+});
 
 // Get user by ID (Admin only)
-exports.getUserById = async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT user_id, name, email, phone, role, status, created_at, updated_at FROM Users WHERE user_id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ message: 'User not found' });
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+exports.getUserById = handle(async (req, res) => {
+  const user = await repo.getUserById(req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json(user);
+});
 
 // Get all users (Admin only)
-exports.getAllUsers = async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT user_id, name, email, phone, role, status, created_at, updated_at FROM Users');
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+exports.getAllUsers = handle(async (req, res) => {
+  res.json(await repo.getAllUsers());
+});

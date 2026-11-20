@@ -11,55 +11,34 @@ import {
   LayoutDashboard,
   Users,
   CreditCard,
-  FileText,
-  BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
-  Home,
   Zap,
 } from 'lucide-react'
 
-const navigation = [
-  {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-    current: false,
-  },
-  {
-    name: 'Customers',
-    href: '/customers',
-    icon: Users,
-    current: false,
-    badge: '24',
-  },
-  {
-    name: 'Subscriptions',
-    href: '/subscribe',
-    icon: CreditCard,
-    current: false,
-    badge: 'New',
-    badgeVariant: 'primary' as const,
-  },
-  {
-    name: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3,
-    current: false,
-  },
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: Settings,
-    current: false,
-  },
+type NavItem = {
+  name: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  badge?: string
+  badgeVariant?: 'primary' | 'neutral'
+}
+
+const adminNavigation: NavItem[] = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Customers', href: '/customers', icon: Users },
+  { name: 'Plans', href: '/subscribe', icon: CreditCard },
+]
+
+const customerNavigation: NavItem[] = [
+  { name: 'My Subscription', href: '/subscribe', icon: CreditCard },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
   const { sidebarOpen, toggleSidebar } = useUIStore()
   const { user } = useAuthStore()
+  const navigation = user?.role === 'admin' ? adminNavigation : customerNavigation
 
   return (
     <>

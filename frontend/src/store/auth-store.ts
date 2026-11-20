@@ -1,54 +1,71 @@
 ﻿'use client'
 
 import { create } from 'zustand'
+import { api, session, type ApiUser } from '@/lib/api'
 
-interface User {
-  id: string
+export interface User {
+  id: number
   name: string
   email: string
-  role: string
+  role: 'user' | 'admin'
 }
 
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
+  hydrated: boolean
+  hydrate: () => void
+  login: (email: string, password: string) => Promise<User>
+  register: (data: { name: string; email: string; password: string; phone?: string }) => Promise<User>
   logout: () => void
   setUser: (user: User | null) => void
   setLoading: (loading: boolean) => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+const toUser = (u: ApiUser): User => ({ id: u.user_id, name: u.name, email: u.email, role: u.role })
+
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  
-  login: async (email: string, password: string) => {
+  hydrated: false,
+
+  // Restore the session saved in localStorage (call once on the client)
+  hydrate: () => {
+    if (get().hydrated) return
+    const saved = session.getUser()
+    set({ user: saved ? toUser(saved) : null, isAuthenticated: !!saved, hydrated: true })
+  },
+
+  login: async (email, password) => {
     set({ isLoading: true })
     try {
-      const mockUser: User = {
-        id: '1',
-        name: 'John Doe',
-        email: email,
-        role: 'admin'
-      }
-      set({ user: mockUser, isAuthenticated: true, isLoading: false })
-    } catch (error) {
+      const { accessToken, refreshToken, user } = await api.login(email, password)
+      session.save(accessToken, refreshToken, user)
+      const u = toUser(user)
+      set({ user: u, isAuthenticated: true })
+      return u
+    } finally {
       set({ isLoading: false })
-      throw error
     }
   },
-  
+
+  register: async (data) => {
+    set({ isLoading: true })
+    try {
+      await api.register(data)
+    } finally {
+      set({ isLoading: false })
+    }
+    return get().login(data.email, data.password)
+  },
+
   logout: () => {
+    session.clear()
     set({ user: null, isAuthenticated: false })
   },
-  
-  setUser: (user) => {
-    set({ user, isAuthenticated: !!user })
-  },
-  
-  setLoading: (loading) => {
-    set({ isLoading: loading })
-  },
+
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  setLoading: (loading) => set({ isLoading: loading }),
 }))

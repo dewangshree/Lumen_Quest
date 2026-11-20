@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/store/auth-store'
 import { Button } from '@/components/ui/Button'
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
-import { Eye, EyeOff, Mail, Lock, User, Building, Shield, Zap } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, Shield, Zap } from 'lucide-react'
 
 interface AuthFormData {
   email: string
@@ -16,7 +17,6 @@ interface AuthFormData {
   confirmPassword?: string
   firstName?: string
   lastName?: string
-  company?: string
 }
 
 interface AuthFormProps {
@@ -29,7 +29,9 @@ interface AuthFormProps {
 export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: AuthFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const { login, setLoading, isLoading } = useAuthStore()
+  const [formError, setFormError] = useState<string | null>(null)
+  const router = useRouter()
+  const { login, register: registerUser, isLoading } = useAuthStore()
 
   const {
     register,
@@ -42,31 +44,28 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
   const password = watch('password')
 
   const onSubmit = async (data: AuthFormData) => {
+    setFormError(null)
     try {
-      setLoading(true)
-      
-      if (mode === 'signup') {
-        // Simulate signup API call
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        // Create mock user based on type
-        const mockUser = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: `${data.firstName} ${data.lastName}`,
-          email: data.email,
-          role: userType === 'admin' ? 'admin' : 'customer'
-        }
-        // For now, we'll just login the user after signup
-        await login(data.email, data.password)
-      } else {
-        // Login
-        await login(data.email, data.password)
+      if (mode === 'signup' && userType === 'admin') {
+        setFormError('Admin accounts can only be created by an existing admin. Please sign up as a customer.')
+        return
       }
-      
+
+      const user = mode === 'signup'
+        ? await registerUser({
+            name: `${data.firstName} ${data.lastName}`.trim(),
+            email: data.email,
+            password: data.password,
+          })
+        : await login(data.email, data.password)
+
+      if (userType === 'admin' && user.role !== 'admin') {
+        setFormError('This account is not an admin account. Signed you in as a customer instead.')
+      }
       reset()
+      router.push(user.role === 'admin' ? '/dashboard' : '/subscribe')
     } catch (error) {
-      console.error('Auth error:', error)
-    } finally {
-      setLoading(false)
+      setFormError(error instanceof Error ? error.message : 'Something went wrong. Please try again.')
     }
   }
 
@@ -89,6 +88,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
         {/* User Type Toggle */}
         <div className="flex bg-gray-100 rounded-lg p-1 space-x-1">
           <button
+            type="button"
             onClick={() => onUserTypeChange('customer')}
             className={cn(
               'flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200',
@@ -101,6 +101,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
             <span>Customer</span>
           </button>
           <button
+            type="button"
             onClick={() => onUserTypeChange('admin')}
             className={cn(
               'flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200',
@@ -160,19 +161,6 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
                     })}
                   />
                 </div>
-              )}
-
-              {/* Company field for customers */}
-              {mode === 'signup' && userType === 'customer' && (
-                <Input
-                  label="Company"
-                  placeholder="Acme Inc."
-                  leftIcon={<Building className="h-4 w-4" />}
-                  error={errors.company?.message}
-                  {...register('company', {
-                    required: 'Company name is required'
-                  })}
-                />
               )}
 
               {/* Email */}
@@ -241,6 +229,12 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
                 />
               )}
 
+              {formError && (
+                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {formError}
+                </div>
+              )}
+
               {/* Submit Button */}
               <Button
                 type="submit"
@@ -256,6 +250,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
                 <div className="text-center">
                   <button
                     type="button"
+                    onClick={() => router.push('/forgot-password')}
                     className="text-sm text-primary-600 hover:text-primary-700 transition-colors"
                   >
                     Forgot your password?
@@ -269,6 +264,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
               <p className="text-center text-sm text-gray-600">
                 {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
                 <button
+                  type="button"
                   onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}
                   className="font-medium text-primary-600 hover:text-primary-700 transition-colors"
                 >
@@ -281,8 +277,8 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
             <div className="bg-gray-50 rounded-lg p-3 space-y-2">
               <p className="text-xs font-medium text-gray-700">Demo Credentials:</p>
               <div className="text-xs text-gray-600 space-y-1">
-                <p><strong>Admin:</strong> admin@demo.com / password123</p>
-                <p><strong>Customer:</strong> customer@demo.com / password123</p>
+                <p><strong>Admin:</strong> admin@lumen.com / admin123</p>
+                <p><strong>Customer:</strong> aman@example.com / password123</p>
               </div>
             </div>
           </CardContent>

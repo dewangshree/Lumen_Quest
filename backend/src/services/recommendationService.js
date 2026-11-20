@@ -1,3 +1,6 @@
+const users = require("../data/dataset.json").User_Data; // exported from SubscriptionUseCase_Dataset.xlsx
+const loadData = () => users;
+
 function hasContact(user) {
   const email = String(user["Email"] || user["email"] || "").trim();
   const phone = String(user["Phone"] || user["phone"] || "").trim();

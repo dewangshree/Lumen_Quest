@@ -1,10 +1,12 @@
 'use client'
 
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Sidebar } from './sidebar'
 import { Header } from './header'
 import { useUIStore } from '@/store/ui-store'
+import { useAuthStore } from '@/store/auth-store'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -13,12 +15,16 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname() || '' // fallback to empty string
   const { sidebarOpen } = useUIStore()
+  const hydrate = useAuthStore((s) => s.hydrate)
+
+  // Restore the saved login session on first load
+  useEffect(() => { hydrate() }, [hydrate])
 
   // Don't show layout for auth pages
   const isAuthPage =
     pathname.startsWith('/auth') ||
-    pathname === '/login' ||
-    pathname === '/register'
+    pathname === '/' ||
+    ['/login', '/signup', '/register', '/forgot-password'].includes(pathname.replace(/\/$/, ''))
 
   if (isAuthPage) {
     return <>{children}</>

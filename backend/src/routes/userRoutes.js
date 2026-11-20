@@ -1,15 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+
+const adminOnly = authorizeRoles('admin');
 
 // Authenticated user routes
-router.get('/me', authMiddleware, userController.getMyProfile);
-router.put('/me', authMiddleware, userController.updateMyProfile);
-router.delete('/me', authMiddleware, userController.deleteMyAccount);
+router.get('/me', authenticateToken, userController.getMyProfile);
+router.put('/me', authenticateToken, userController.updateMyProfile);
+router.delete('/me', authenticateToken, userController.deleteMyAccount);
 
 // Admin-only routes
-router.get('/:id', authMiddleware, userController.getUserById);       // Admin only
-router.get('/', authMiddleware, userController.getAllUsers);          // Admin only
+router.get('/', authenticateToken, adminOnly, userController.getAllUsers);
+router.get('/:id', authenticateToken, adminOnly, userController.getUserById);
 
 module.exports = router;
