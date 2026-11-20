@@ -72,6 +72,39 @@ export interface Stats {
   recentActivity: { id: number; type: 'paid' | 'pending' | 'failed'; name: string; plan_name: string; amount: number; date: string }[]
 }
 
+export interface Bill {
+  billing_id: number
+  amount: number
+  discount_applied: number
+  billing_date: string
+  payment_status: 'paid' | 'pending' | 'failed'
+  payment_method: string
+  transaction_id: string | null
+  sub_id: number
+  plan_name: string
+  validity_days: number
+}
+
+export interface Recommendation {
+  type: 'start' | 'resume' | 'renew' | 'save' | 'upgrade' | 'payment'
+  title: string
+  message: string
+  plan_id?: number
+}
+
+export interface CustomerSummary {
+  user: { user_id: number; name: string; email: string; phone: string | null; created_at: string }
+  current: (Subscription & { quota_sessions: number; validity_days: number }) | null
+  daysLeft: number | null
+  totalDays: number | null
+  total_spent: number
+  paid_count: number
+  outstanding_count: number
+  outstanding_amount: number
+  subscriptionCount: number
+  recommendations: Recommendation[]
+}
+
 export class ApiError extends Error {
   constructor(message: string, public status: number) {
     super(message)
@@ -157,7 +190,7 @@ export const api = {
     request<{ accessToken: string; refreshToken: string; user: ApiUser }>('/api/auth/login', { method: 'POST', body: { email, password } }),
   register: (data: { name: string; email: string; password: string; phone?: string }) =>
     request<{ userId: number }>('/api/auth/register', { method: 'POST', body: data }),
-  me: () => request<ApiUser>('/api/users/me', { auth: true }),
+  me: () => request<ApiUser & { created_at: string }>('/api/users/me', { auth: true }),
 
   plans: () => request<Plan[]>('/api/plans'),
 
@@ -167,6 +200,17 @@ export const api = {
   cancelSubscription: (subId: number) =>
     request<{ message: string }>(`/api/subscriptions/${subId}/cancel`, { method: 'POST', auth: true }),
 
+  pauseSubscription: (subId: number) =>
+    request<{ message: string }>(`/api/subscriptions/${subId}/pause`, { method: 'POST', auth: true }),
+  resumeSubscription: (subId: number) =>
+    request<{ message: string }>(`/api/subscriptions/${subId}/resume`, { method: 'POST', auth: true }),
+  summary: () => request<CustomerSummary>('/api/subscriptions/me/summary', { auth: true }),
+  billing: () => request<Bill[]>('/api/subscriptions/me/billing', { auth: true }),
+  payBill: (billingId: number, payment_method = 'upi') =>
+    request<{ message: string }>(`/api/subscriptions/me/billing/${billingId}/pay`, { method: 'POST', body: { payment_method }, auth: true }),
+  updateProfile: (data: { name?: string; phone?: string; password?: string; current_password?: string }) =>
+    request<{ message: string }>('/api/users/me', { method: 'PUT', body: data, auth: true }),
+
   stats: () => request<Stats>('/api/admin/stats', { auth: true }),
   customers: () => request<Customer[]>('/api/admin/customers', { auth: true }),
   createCustomer: (data: { name: string; email: string; phone?: string; plan_id?: number }) =>
@@ -175,3 +219,10 @@ export const api = {
 
 export const formatINR = (n: number | null | undefined) =>
   `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+
+export const formatDate = (d: string | null | undefined) =>
+  d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  upi: 'UPI', credit_card: 'Credit card', debit_card: 'Debit card', cash: 'Cash',
+}

@@ -1,11 +1,10 @@
 ﻿'use client'
 
-import { Bell, LogOut, Menu } from 'lucide-react'
+import { LogOut, Menu } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
 import { useUIStore } from '@/store/ui-store'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
-import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 
 export function Header() {
@@ -16,9 +15,7 @@ export function Header() {
     logout()
     router.push('/login')
   }
-  const { notifications, toggleSidebar } = useUIStore()
-
-  const unreadCount = notifications.length
+  const { toggleSidebar } = useUIStore()
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-30">
@@ -37,19 +34,6 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-3">
-          <div className="relative">
-            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <div className="absolute -top-1 -right-1">
-                  <Badge variant="error" size="sm">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Badge>
-                </div>
-              )}
-            </button>
-          </div>
-
           {user && (
             <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
               <div className="hidden sm:block text-right">
@@ -57,11 +41,16 @@ export function Header() {
                 <p className="text-xs text-gray-500">{user.role === 'admin' ? 'Admin' : 'Customer'}</p>
               </div>
               
-              <div className="h-8 w-8 bg-primary-100 rounded-full flex items-center justify-center">
+              <button
+                onClick={() => router.push('/profile')}
+                title="Profile"
+                aria-label="Open profile"
+                className="h-8 w-8 bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200"
+              >
                 <span className="text-sm font-medium text-primary-700">
                   {user.name?.charAt(0).toUpperCase()}
                 </span>
-              </div>
+              </button>
               <button
                 onClick={handleLogout}
                 title="Sign out"

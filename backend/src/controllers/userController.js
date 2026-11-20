@@ -12,11 +12,24 @@ exports.getMyProfile = handle(async (req, res) => {
 
 // Update my profile
 exports.updateMyProfile = handle(async (req, res) => {
-  const { name, phone, password } = req.body || {};
+  const { name, phone, password, current_password } = req.body || {};
   const fields = {};
-  if (name) fields.name = name;
-  if (phone) fields.phone = phone;
-  if (password) fields.password_hash = await bcrypt.hash(password, 10);
+  if (name !== undefined) {
+    if (!String(name).trim()) return res.status(400).json({ message: 'Name cannot be empty' });
+    fields.name = String(name).trim();
+  }
+  if (phone !== undefined) {
+    if (phone && !/^[0-9+\-\s]{7,15}$/.test(phone)) return res.status(400).json({ message: 'Enter a valid phone number' });
+    fields.phone = phone || null;
+  }
+  if (password) {
+    if (String(password).length < 8) return res.status(400).json({ message: 'New password must be at least 8 characters' });
+    const hash = await repo.getUserPasswordHash(req.user.id);
+    if (!hash || !current_password || !(await bcrypt.compare(current_password, hash))) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    fields.password_hash = await bcrypt.hash(password, 10);
+  }
   if (!Object.keys(fields).length) return res.status(400).json({ message: 'Nothing to update' });
 
   const ok = await repo.updateUser(req.user.id, fields);

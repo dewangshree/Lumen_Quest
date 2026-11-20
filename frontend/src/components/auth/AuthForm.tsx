@@ -63,7 +63,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
         setFormError('This account is not an admin account. Signed you in as a customer instead.')
       }
       reset()
-      router.push(user.role === 'admin' ? '/dashboard' : '/subscribe')
+      router.push(user.role === 'admin' ? '/dashboard' : '/account')
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Something went wrong. Please try again.')
     }
@@ -167,6 +167,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
               <Input
                 label="Email"
                 type="email"
+                autoComplete="email"
                 placeholder="john@example.com"
                 leftIcon={<Mail className="h-4 w-4" />}
                 error={errors.email?.message}
@@ -183,6 +184,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
               <Input
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 placeholder="••••••••"
                 leftIcon={<Lock className="h-4 w-4" />}
                 rightIcon={
@@ -210,6 +212,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
                 <Input
                   label="Confirm Password"
                   type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   leftIcon={<Lock className="h-4 w-4" />}
                   rightIcon={

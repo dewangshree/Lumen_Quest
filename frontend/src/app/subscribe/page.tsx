@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Link from 'next/link';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { useAuthStore } from '@/store/auth-store';
 import { api, formatINR, type Plan, type Subscription } from '@/lib/api';
@@ -56,6 +57,15 @@ function SubscribeContent() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Deep link from suggestions: /subscribe?plan=<id> opens checkout for that plan
+  useEffect(() => {
+    if (isAdmin || !plans.length) return;
+    const id = Number(new URLSearchParams(window.location.search).get('plan'));
+    const plan = plans.find((p) => p.plan_id === id);
+    if (plan && current?.plan_id !== plan.plan_id) setSelectedPlan(plan);
+    if (id) window.history.replaceState(null, '', window.location.pathname);
+  }, [plans]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const current = subs.find((s) => s.status === 'active' || s.status === 'paused') || null;
   const popularId = plans.length >= 3 ? plans[Math.floor(plans.length / 2)].plan_id : null;
 
@@ -65,7 +75,7 @@ function SubscribeContent() {
     setCheckoutError(null);
     try {
       await api.subscribe(selectedPlan.plan_id, paymentMethod);
-      setNotice(`You're now subscribed to ${selectedPlan.plan_name}.`);
+      setNotice(`You're now subscribed to ${selectedPlan.plan_name}. A paid invoice has been added to your billing history.`);
       setSelectedPlan(null);
       await load();
     } catch (e) {
@@ -100,7 +110,10 @@ function SubscribeContent() {
       {notice && (
         <div role="status" className="mb-6 flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           <span>{notice}</span>
-          <button onClick={() => setNotice(null)} className="text-green-700 hover:text-green-900">Dismiss</button>
+          <span className="flex gap-4">
+            {!isAdmin && <Link href="/account" className="font-medium underline">Go to overview</Link>}
+            <button onClick={() => setNotice(null)} className="text-green-700 hover:text-green-900">Dismiss</button>
+          </span>
         </div>
       )}
       {error && (

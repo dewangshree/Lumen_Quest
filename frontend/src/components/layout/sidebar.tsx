@@ -11,6 +11,8 @@ import {
   LayoutDashboard,
   Users,
   CreditCard,
+  Receipt,
+  UserCircle,
   ChevronLeft,
   ChevronRight,
   Zap,
@@ -28,10 +30,14 @@ const adminNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Plans', href: '/subscribe', icon: CreditCard },
+  { name: 'Profile', href: '/profile', icon: UserCircle },
 ]
 
 const customerNavigation: NavItem[] = [
-  { name: 'My Subscription', href: '/subscribe', icon: CreditCard },
+  { name: 'Overview', href: '/account', icon: LayoutDashboard },
+  { name: 'Plans', href: '/subscribe', icon: CreditCard },
+  { name: 'Billing', href: '/billing', icon: Receipt },
+  { name: 'Profile', href: '/profile', icon: UserCircle },
 ]
 
 export function Sidebar() {
@@ -100,6 +106,8 @@ export function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
+                aria-label={item.name}
+                title={sidebarOpen ? undefined : item.name}
                 className={cn(
                   'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
                   isActive

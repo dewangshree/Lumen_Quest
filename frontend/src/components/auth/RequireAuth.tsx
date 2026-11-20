@@ -35,7 +35,7 @@ export function RequireAuth({ role, children }: RequireAuthProps) {
           {role === 'admin' ? 'This page is only available to admins.' : 'This page is for customers.'}
         </p>
         <button
-          onClick={() => router.push(user.role === 'admin' ? '/dashboard' : '/subscribe')}
+          onClick={() => router.push(user.role === 'admin' ? '/dashboard' : '/account')}
           className="mt-6 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
         >
           Go to your home page

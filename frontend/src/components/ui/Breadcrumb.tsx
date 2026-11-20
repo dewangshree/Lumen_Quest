@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/store/auth-store';
 
 interface BreadcrumbItem {
   label: string;
@@ -16,9 +17,10 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
   const pathname = usePathname();
+  const role = useAuthStore((s) => s.user?.role);
 
   // Auto-generate breadcrumbs from pathname if no items provided
-  const breadcrumbItems = items || generateBreadcrumbs(pathname);
+  const breadcrumbItems = items || generateBreadcrumbs(pathname, role === 'admin' ? '/dashboard' : '/account');
 
   if (breadcrumbItems.length <= 1) {
     return null;
@@ -49,18 +51,20 @@ export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
   );
 }
 
-function generateBreadcrumbs(pathname: string | null): BreadcrumbItem[] {
+const LABELS: Record<string, string> = { subscribe: 'Plans', account: 'Overview', billing: 'Billing', profile: 'Profile', dashboard: 'Dashboard', customers: 'Customers' };
+
+function generateBreadcrumbs(pathname: string | null, homeHref: string): BreadcrumbItem[] {
   if (!pathname) return [];
 
   const segments = pathname.split('/').filter(Boolean);
-  const breadcrumbs: BreadcrumbItem[] = [{ label: 'Home', href: '/dashboard' }];
+  const breadcrumbs: BreadcrumbItem[] = [{ label: 'Home', href: homeHref }];
 
   let currentPath = '';
   segments.forEach((segment, index) => {
     currentPath += `/${segment}`;
     
     // Convert pathname segments to readable labels
-    const label = segment
+    const label = LABELS[segment] || segment
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');

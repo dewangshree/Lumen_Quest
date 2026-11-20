@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { api, formatINR, type Stats } from '@/lib/api';
+import { RefreshCw } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -50,13 +51,19 @@ function downloadCsv(stats: Stats) {
 function DashboardContent() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
+    setRefreshing(true);
     try {
       setStats(await api.stats());
+      setUpdatedAt(new Date());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load dashboard');
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -97,8 +104,20 @@ function DashboardContent() {
       title="Analytics Dashboard"
       description="Live overview of your subscription business"
       action={
-        <div className="flex items-center gap-3">
-          <button onClick={load} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Refresh</button>
+        <div className="flex flex-wrap items-center gap-3">
+          {updatedAt && (
+            <span className="text-xs text-gray-500" aria-live="polite">
+              Updated {updatedAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          )}
+          <button
+            onClick={load}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-wait"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
           <button onClick={() => downloadCsv(stats)} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700">
             Export Report
           </button>

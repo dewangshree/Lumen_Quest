@@ -101,11 +101,9 @@ export default function HomePage() {
                       Admin Login
                     </Button>
                   </Link>
-                  <Link href="/signup" className="block">
-                    <Button variant="secondary" className="w-full">
-                      Create Admin Account
-                    </Button>
-                  </Link>
+                  <p className="text-center text-sm text-gray-500">
+                    Admin accounts are issued by your organisation.
+                  </p>
                 </div>
               </CardContent>
             </Card>

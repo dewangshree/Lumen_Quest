@@ -56,3 +56,6 @@ CREATE TABLE IF NOT EXISTS billing (
 );
 CREATE INDEX IF NOT EXISTS billing_sub_idx ON billing (sub_id);
 CREATE INDEX IF NOT EXISTS billing_date_idx ON billing (billing_date);
+
+-- Added: track when a subscription was paused so resuming can extend the end date
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS paused_at DATE;

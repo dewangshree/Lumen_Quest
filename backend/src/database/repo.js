@@ -127,6 +127,113 @@ const cancelSubscription = safe(async (userId, subId) =>
     [subId, userId]
   )).length > 0);
 
+// Pause an active subscription (remaining days are kept and added back on resume)
+const pauseSubscription = safe(async (userId, subId) =>
+  (await query(
+    "UPDATE subscriptions SET status = 'paused', paused_at = CURRENT_DATE WHERE sub_id = $1 AND user_id = $2 AND status = 'active' RETURNING sub_id",
+    [subId, userId]
+  )).length > 0);
+
+// Resume a paused subscription, extending the end date by the number of days it was paused
+const resumeSubscription = safe(async (userId, subId) =>
+  (await query(
+    `UPDATE subscriptions
+        SET status = 'active',
+            end_date = CASE WHEN end_date IS NULL THEN NULL
+                            ELSE end_date + (CURRENT_DATE - COALESCE(paused_at, CURRENT_DATE)) END,
+            paused_at = NULL
+      WHERE sub_id = $1 AND user_id = $2 AND status = 'paused' RETURNING sub_id`,
+    [subId, userId]
+  )).length > 0);
+
+// Settle a pending/failed bill that belongs to the user
+const payBill = safe(async (userId, billingId, method = 'upi') =>
+  (await query(
+    `UPDATE billing b SET payment_status = 'paid', payment_method = $3, billing_date = CURRENT_DATE,
+            transaction_id = COALESCE(b.transaction_id, '') || '-PAID'
+       FROM subscriptions s
+      WHERE b.sub_id = s.sub_id AND b.billing_id = $1 AND s.user_id = $2 AND b.payment_status IN ('pending', 'failed')
+      RETURNING b.billing_id`,
+    [billingId, userId, method]
+  )).length > 0);
+
+const getUserPasswordHash = safe(async (id) =>
+  ((await query('SELECT password_hash FROM users WHERE user_id = $1', [id]))[0] || {}).password_hash || null);
+
+const getBillingForUser = safe(async (userId) => query(`
+  SELECT b.billing_id, b.amount, b.discount_applied, b.billing_date, b.payment_status, b.payment_method,
+         b.transaction_id, s.sub_id, p.plan_name, p.validity_days
+  FROM billing b JOIN subscriptions s ON s.sub_id = b.sub_id JOIN plans p ON p.plan_id = s.plan_id
+  WHERE s.user_id = $1 ORDER BY b.billing_date DESC, b.billing_id DESC`, [userId]));
+
+// Overview for the customer portal, including a data-driven plan recommendation
+const getCustomerSummary = safe(async (userId) => {
+  const [user] = await query('SELECT user_id, name, email, phone, created_at FROM users WHERE user_id = $1', [userId]);
+  if (!user) return null;
+  const subs = await getSubscriptionsForUser(userId);
+  const [money] = await query(`
+    SELECT COALESCE(SUM(b.amount) FILTER (WHERE b.payment_status = 'paid'), 0) AS total_spent,
+           COUNT(*) FILTER (WHERE b.payment_status = 'paid') AS paid_count,
+           COUNT(*) FILTER (WHERE b.payment_status IN ('pending', 'failed')) AS outstanding_count,
+           COALESCE(SUM(b.amount) FILTER (WHERE b.payment_status IN ('pending', 'failed')), 0) AS outstanding_amount
+    FROM billing b JOIN subscriptions s ON s.sub_id = b.sub_id WHERE s.user_id = $1`, [userId]);
+  const plans = await getAllPlans({ activeOnly: true });
+
+  const current = subs.find((s) => s.status === 'active' || s.status === 'paused') || null;
+  const today = new Date(new Date().toISOString().slice(0, 10));
+  let daysLeft = null;
+  let totalDays = null;
+  if (current && current.end_date) {
+    daysLeft = Math.max(0, Math.round((new Date(current.end_date) - today) / 86400000));
+    totalDays = Math.max(1, Math.round((new Date(current.end_date) - new Date(current.start_date)) / 86400000));
+  }
+
+  const perDay = (p) => p.price / Math.max(1, p.validity_days);
+  const perSession = (p) => (p.quota_sessions ? p.price / p.quota_sessions : Infinity);
+  const recommendations = [];
+
+  if (!current) {
+    const best = [...plans].sort((a, b) => perDay(a) - perDay(b))[0];
+    if (best) recommendations.push({
+      type: 'start', plan_id: best.plan_id,
+      title: `Start with ${best.plan_name}`,
+      message: `Lowest cost per day of all plans: ₹${perDay(best).toFixed(2)}/day for ${best.validity_days} days.`,
+    });
+  } else {
+    const cur = plans.find((p) => p.plan_id === current.plan_id) || current;
+    if (current.status === 'paused') {
+      recommendations.push({ type: 'resume', title: 'Resume your subscription', message: `Your ${cur.plan_name} is paused. Resuming keeps your remaining ${daysLeft ?? ''} days.`.replace('  ', ' ') });
+    }
+    if (current.status === 'active' && daysLeft !== null && daysLeft <= 7) {
+      recommendations.push({ type: 'renew', title: 'Renewal coming up', message: `Your plan ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}. Renew now to avoid a gap.`, plan_id: cur.plan_id });
+    }
+    const cheaper = plans
+      .filter((p) => p.plan_id !== cur.plan_id && p.validity_days > (cur.validity_days || 0) && perDay(p) < perDay(cur))
+      .sort((a, b) => perDay(a) - perDay(b))[0];
+    if (cheaper) {
+      const monthly = (perDay(cur) - perDay(cheaper)) * 30;
+      recommendations.push({
+        type: 'save', plan_id: cheaper.plan_id,
+        title: `Save ₹${Math.round(monthly)}/month with ${cheaper.plan_name}`,
+        message: `₹${perDay(cheaper).toFixed(2)}/day instead of ₹${perDay(cur).toFixed(2)}/day on ${cur.plan_name}.`,
+      });
+    }
+    const more = plans
+      .filter((p) => p.quota_sessions > cur.quota_sessions && perSession(p) < perSession(cur))
+      .sort((a, b) => perSession(a) - perSession(b))[0];
+    if (more) recommendations.push({
+      type: 'upgrade', plan_id: more.plan_id,
+      title: `Get ${more.quota_sessions - cur.quota_sessions} more sessions with ${more.plan_name}`,
+      message: `₹${perSession(more).toFixed(0)} per session vs ₹${perSession(cur).toFixed(0)} on your current plan.`,
+    });
+  }
+  if (money.outstanding_count > 0) {
+    recommendations.unshift({ type: 'payment', title: 'Payment needs attention', message: `${money.outstanding_count} bill(s) pending or failed, ₹${money.outstanding_amount.toLocaleString('en-IN')} in total.` });
+  }
+
+  return { user, current, daysLeft, totalDays, ...money, subscriptionCount: subs.length, recommendations };
+});
+
 // ---------------- Admin: customers & stats ----------------
 const getCustomers = safe(async () => query(`
   SELECT u.user_id AS id, u.name, u.email, u.phone, u.status AS account_status, u.created_at,
@@ -213,5 +320,6 @@ module.exports = {
   findUserByEmail, createUser, getUserById, getAllUsers, updateUser, deleteUser,
   getAllPlans, getPlanById, createPlan, updatePlan, deletePlan,
   getSubscriptionsForUser, subscribe, cancelSubscription,
+  pauseSubscription, resumeSubscription, getBillingForUser, getCustomerSummary, payBill, getUserPasswordHash,
   getCustomers, getStats,
 };
