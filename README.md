@@ -16,7 +16,7 @@ A modern subscription management system built with Next.js and a Stripe-inspired
 | Part | URL | Hosting |
 |------|-----|---------|
 | Frontend | https://dewangshree.github.io/Lumen_Quest/ | GitHub Pages (auto-deploys on push to `main`) |
-| Backend API | https://lumen-quest-api.vercel.app | Vercel serverless (Node.js / Express) |
+| Backend API | https://lumen-quest-api.vercel.app | Vercel serverless (Node.js / Express, auto-deploys on push to `main`) |
 | Database | Neon Postgres | Provisioned through Vercel |
 
 **Demo accounts**
@@ -56,7 +56,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5000 npm run dev   # http://localhost:3000
 ### Deploying
 
 - **Frontend:** push to `main` – the `Deploy frontend to GitHub Pages` workflow builds and publishes it.
-- **Backend:** `cd backend && npx vercel deploy --prod`
+- **Backend:** push to `main` – Vercel builds the `backend/` folder (project root directory is set to `backend`) and deploys it to https://lumen-quest-api.vercel.app.
 
 ## 🛠️ Tech Stack
 
