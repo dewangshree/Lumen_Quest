@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { ArrowRight, Shield, Users, Zap, BarChart3 } from 'lucide-react'
+import { Shield, Users, Zap } from 'lucide-react'
 
 export default function HomePage() {
   return (
@@ -30,18 +30,6 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/auth">
-                <Button size="lg" icon={<ArrowRight className="h-5 w-5" />}>
-                  Get Started
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button variant="secondary" size="lg">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
           </div>
         </div>
       </div>
