@@ -24,14 +24,18 @@ interface AuthFormProps {
   userType: 'customer' | 'admin'
   onModeChange: (mode: 'login' | 'signup') => void
   onUserTypeChange: (type: 'customer' | 'admin') => void
+  /** Hide the Customer/Admin switch (e.g. opened from "Customer Login" or "Admin Login") */
+  lockUserType?: boolean
 }
 
-export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: AuthFormProps) {
+export function AuthForm({ mode, userType, onModeChange, onUserTypeChange, lockUserType = false }: AuthFormProps) {
+  // Only customers can self-register, so signup never shows the admin option
+  const showTypeSwitch = mode === 'login' && !lockUserType
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const router = useRouter()
-  const { login, register: registerUser, isLoading } = useAuthStore()
+  const { login, logout, register: registerUser, isLoading } = useAuthStore()
 
   const {
     register,
@@ -59,8 +63,16 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
           })
         : await login(data.email, data.password)
 
-      if (userType === 'admin' && user.role !== 'admin') {
-        setFormError('This account is not an admin account. Signed you in as a customer instead.')
+      // Keep customer and admin sign-in separate
+      if (mode === 'login' && userType === 'admin' && user.role !== 'admin') {
+        logout()
+        setFormError('This is not an admin account. Please use Customer Login.')
+        return
+      }
+      if (mode === 'login' && userType === 'customer' && user.role === 'admin') {
+        logout()
+        setFormError('This is an admin account. Please use Admin Login.')
+        return
       }
       reset()
       router.push(user.role === 'admin' ? '/dashboard' : '/account')
@@ -86,6 +98,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
         </div>
 
         {/* User Type Toggle */}
+        {showTypeSwitch && (
         <div className="flex bg-gray-100 rounded-lg p-1 space-x-1">
           <button
             type="button"
@@ -114,6 +127,7 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
             <span>Admin</span>
           </button>
         </div>
+        )}
 
         {/* Auth Card */}
         <Card className="border-0 shadow-xl">
@@ -264,7 +278,8 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
               )}
             </form>
 
-            {/* Mode Toggle */}
+            {/* Mode Toggle (admins can't self-register) */}
+            {!(mode === 'login' && userType === 'admin') && (
             <div className="pt-4 border-t border-gray-200">
               <p className="text-center text-sm text-gray-600">
                 {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
@@ -277,13 +292,15 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange }: Aut
                 </button>
               </p>
             </div>
+            )}
 
             {/* Demo Credentials */}
             <div className="bg-gray-50 rounded-lg p-3 space-y-2">
               <p className="text-xs font-medium text-gray-700">Demo Credentials:</p>
               <div className="text-xs text-gray-600 space-y-1">
-                <p><strong>Admin:</strong> admin@lumen.com / admin123</p>
-                <p><strong>Customer:</strong> aman@example.com / password123</p>
+                {userType === 'admin' && mode === 'login'
+                  ? <p><strong>Admin:</strong> admin@lumen.com / admin123</p>
+                  : <p><strong>Customer:</strong> aman@example.com / password123</p>}
               </div>
             </div>
           </CardContent>

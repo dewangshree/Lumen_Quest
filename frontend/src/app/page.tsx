@@ -70,7 +70,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Link href="/login" className="block">
+                  <Link href="/login?as=customer" className="block">
                     <Button className="w-full" size="lg">
                       Customer Login
                     </Button>
@@ -96,7 +96,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Link href="/login" className="block">
+                  <Link href="/login?as=admin" className="block">
                     <Button className="w-full" size="lg">
                       Admin Login
                     </Button>

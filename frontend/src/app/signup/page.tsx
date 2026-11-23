@@ -12,7 +12,7 @@ export default function SignupPage() {
     <AuthForm
       mode="signup"
       userType={userType}
-      onModeChange={(mode) => router.push(mode === 'signup' ? '/signup' : '/login')}
+      onModeChange={(mode) => router.push(mode === 'signup' ? '/signup' : '/login?as=customer')}
       onUserTypeChange={setUserType}
     />
   )
