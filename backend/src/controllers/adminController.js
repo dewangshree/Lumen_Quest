@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const repo = require('../database/repo');
 const handle = require('../utils/handle');
+const { sendAccountCreatedEmail } = require('../services/email');
 
 // GET /api/admin/stats
 exports.stats = handle(async (req, res) => {
@@ -24,7 +25,8 @@ exports.createCustomer = handle(async (req, res) => {
   let subscription = null;
   if (plan_id) subscription = (await repo.subscribe(userId, plan_id)).subscription;
 
-  res.status(201).json({ message: 'Customer created', userId, tempPassword, subscription });
+  const mail = await sendAccountCreatedEmail({ name, email, tempPassword });
+  res.status(201).json({ message: 'Customer created', userId, tempPassword, subscription, emailSent: mail.sent });
 });
 
 // GET /api/admin/customers/:id

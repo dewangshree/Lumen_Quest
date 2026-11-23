@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const repo = require('../database/repo');
 const { JWT_SECRET, JWT_REFRESH_SECRET } = require('../config');
+const { sendWelcomeEmail } = require('../services/email');
 
 const signTokens = (user) => ({
   accessToken: jwt.sign({ id: user.user_id, role: user.role }, JWT_SECRET, { expiresIn: '15m' }),
@@ -15,9 +16,14 @@ exports.register = async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'name, email and password are required' });
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) return res.status(400).json({ message: 'Enter a valid email address' });
+    if (String(password).length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    if (String(name).trim().length > 100) return res.status(400).json({ message: 'Name is too long' });
     const password_hash = await bcrypt.hash(password, 10);
-    const userId = await repo.createUser({ name, email, phone, password_hash, role: 'user' });
-    res.status(201).json({ message: 'User registered successfully', userId });
+    const userId = await repo.createUser({ name: String(name).trim(), email: String(email).trim(), phone, password_hash, role: 'user' });
+    // Awaited so the serverless function doesn't stop mid-send; failures never block signup
+    const mail = await sendWelcomeEmail({ name: String(name).trim(), email: String(email).trim() });
+    res.status(201).json({ message: 'User registered successfully', userId, welcomeEmailSent: mail.sent });
   } catch (err) {
     res.status(err.status || 500).json({ message: err.status ? err.message : 'Internal server error' });
   }
