@@ -134,16 +134,24 @@ export class ApiError extends Error {
 }
 
 // ---- token storage (browser only) ----
+// localStorage with an in-memory fallback, so sign-in still works when the
+// browser blocks storage (private mode, strict privacy settings).
+const memory = new Map<string, string>()
 const storage = {
   get(key: string) {
-    try { return typeof window === 'undefined' ? null : window.localStorage.getItem(key) } catch { return null }
+    try {
+      if (typeof window === 'undefined') return null
+      const v = window.localStorage.getItem(key)
+      return v ?? memory.get(key) ?? null
+    } catch { return memory.get(key) ?? null }
   },
   set(key: string, value: string | null) {
+    if (value === null) memory.delete(key); else memory.set(key, value)
     try {
       if (typeof window === 'undefined') return
       if (value === null) window.localStorage.removeItem(key)
       else window.localStorage.setItem(key, value)
-    } catch { /* storage unavailable */ }
+    } catch { /* storage unavailable: memory copy is used */ }
   },
 }
 

@@ -36,6 +36,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (get().hydrated) return
     const saved = session.getUser()
     set({ user: saved ? toUser(saved) : null, isAuthenticated: !!saved, hydrated: true })
+    if (!saved) return
+    // Confirm the saved session is still valid (token not expired/revoked, account still exists)
+    const snapshot = JSON.stringify(saved)
+    // Only act if the user hasn't signed in again while this check was running
+    const unchanged = () => JSON.stringify(session.getUser()) === snapshot
+    const signOut = () => {
+      if (!unchanged()) return
+      session.clear()
+      set({ user: null, isAuthenticated: false })
+    }
+    api.me()
+      .then((me) => {
+        // Token now belongs to a different account (e.g. database was reset): sign out
+        if (me.email.toLowerCase() !== saved.email.toLowerCase()) return signOut()
+        const fresh = toUser(me)
+        const cur = get().user
+        if (unchanged() && (!cur || cur.role !== fresh.role || cur.name !== fresh.name)) {
+          set({ user: fresh, isAuthenticated: true })
+        }
+      })
+      .catch((e) => {
+        const status = (e as { status?: number }).status
+        if (status === 401 || status === 403 || status === 404) signOut()
+      })
   },
 
   login: async (email, password) => {
