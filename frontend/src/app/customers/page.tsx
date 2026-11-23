@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Download } from 'lucide-react';
+import { DateRangeFilter, ALL_TIME, inRange, type DateRange } from '@/components/ui/DateRangeFilter';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Modal, ModalBody, ModalFooter } from '@/components/ui/Modal';
@@ -55,15 +56,18 @@ function CustomersContent() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [range, setRange] = useState<DateRange>(ALL_TIME);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return customers.filter((c) =>
+      inRange(c.start_date, range) &&
       (!q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)) &&
       (statusFilter === 'all' || (c.subscription_status || 'none') === statusFilter)
     );
-  }, [customers, search, statusFilter]);
+  }, [customers, search, statusFilter, range]);
 
-  useEffect(() => { setPage(0); }, [search, statusFilter]);
+  useEffect(() => { setPage(0); }, [search, statusFilter, range]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -84,7 +88,8 @@ function CustomersContent() {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `customers-${statusFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const period = range.from || range.to ? `${range.from || 'start'}_to_${range.to || 'today'}` : 'all-time';
+    a.download = `customers-${statusFilter}-${period}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -168,7 +173,8 @@ function CustomersContent() {
         <CardHeader>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <CardTitle>Customers</CardTitle>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
+              <DateRangeFilter value={range} onChange={setRange} label="Subscribed since" />
               <Input
                 placeholder="Search name or email…"
                 value={search}

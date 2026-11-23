@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { api, formatINR, formatDate, PAYMENT_METHOD_LABELS, type Bill } from '@/lib/api';
 import { downloadInvoice } from '@/lib/invoice';
 import { Download } from 'lucide-react';
+import { DateRangeFilter, ALL_TIME, inRange, type DateRange } from '@/components/ui/DateRangeFilter';
 
 const statusVariant = { paid: 'success', pending: 'warning', failed: 'error' } as const;
 
@@ -34,6 +35,7 @@ function BillingContent() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  const [range, setRange] = useState<DateRange>(ALL_TIME);
 
   const totals = useMemo(() => {
     const list = bills || [];
@@ -41,7 +43,7 @@ function BillingContent() {
     return { paid: sum('paid'), outstanding: sum('pending') + sum('failed'), count: list.length };
   }, [bills]);
 
-  const shown = (bills || []).filter((b) => filter === 'all' || b.payment_status === filter);
+  const shown = (bills || []).filter((b) => (filter === 'all' || b.payment_status === filter) && inRange(b.billing_date, range));
 
   const pay = async () => {
     if (!paying) return;
@@ -100,6 +102,8 @@ function BillingContent() {
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Payment history</CardTitle>
+            <div className="flex flex-wrap items-center gap-3">
+            <DateRangeFilter value={range} onChange={setRange} label="Billing date" />
             <div className="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm" role="tablist" aria-label="Filter bills">
               {(['all', 'paid', 'pending', 'failed'] as const).map((f) => (
                 <button
@@ -113,13 +117,14 @@ function BillingContent() {
                 </button>
               ))}
             </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           {bills === null && !error ? (
             <div className="flex justify-center py-12"><div className="h-10 w-10 animate-spin rounded-full border-b-2 border-primary-600" /></div>
           ) : shown.length === 0 ? (
-            <p className="py-10 text-center text-gray-500">{filter === 'all' ? 'No payments yet. Subscribe to a plan to get started.' : `No ${filter} bills.`}</p>
+            <p className="py-10 text-center text-gray-500">{(bills || []).length === 0 ? 'No payments yet. Subscribe to a plan to get started.' : 'No bills match the selected filters.'}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-sm">

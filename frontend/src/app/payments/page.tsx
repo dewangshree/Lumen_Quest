@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { api, formatINR, formatDate, PAYMENT_METHOD_LABELS, type AdminBill } from '@/lib/api';
 import { Download } from 'lucide-react';
+import { DateRangeFilter, ALL_TIME, inRange, type DateRange } from '@/components/ui/DateRangeFilter';
 
 const PAGE_SIZE = 15;
 const variant = { paid: 'success', pending: 'warning', failed: 'error' } as const;
@@ -32,21 +33,25 @@ function PaymentsContent() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setPage(0); }, [status, search]);
+  const [range, setRange] = useState<DateRange>(ALL_TIME);
+  useEffect(() => { setPage(0); }, [status, search, range]);
+
+  // Bills inside the selected date range (drives the totals and the table)
+  const inPeriod = useMemo(() => (bills || []).filter((b) => inRange(b.billing_date, range)), [bills, range]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (bills || []).filter((b) =>
+    return inPeriod.filter((b) =>
       (status === 'all' || b.payment_status === status) &&
       (!q || b.name.toLowerCase().includes(q) || b.email.toLowerCase().includes(q) || `inv-${String(b.billing_id).padStart(5, '0')}`.includes(q))
     );
-  }, [bills, status, search]);
+  }, [inPeriod, status, search]);
 
   const totals = useMemo(() => {
-    const sum = (s: string) => (bills || []).filter((b) => b.payment_status === s).reduce((a, b) => a + b.amount, 0);
-    const count = (s: string) => (bills || []).filter((b) => b.payment_status === s).length;
+    const sum = (s: string) => inPeriod.filter((b) => b.payment_status === s).reduce((a, b) => a + b.amount, 0);
+    const count = (s: string) => inPeriod.filter((b) => b.payment_status === s).length;
     return { paid: sum('paid'), pending: sum('pending'), failed: sum('failed'), pendingN: count('pending'), failedN: count('failed') };
-  }, [bills]);
+  }, [inPeriod]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const rows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -71,7 +76,8 @@ function PaymentsContent() {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `payments-${status}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const period = range.from || range.to ? `${range.from || 'start'}_to_${range.to || 'today'}` : 'all-time';
+    a.download = `payments-${status}-${period}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -109,7 +115,8 @@ function PaymentsContent() {
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <CardTitle>Bills</CardTitle>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
+              <DateRangeFilter value={range} onChange={setRange} label="Billing date" />
               <Input placeholder="Search customer or invoice…" value={search} onChange={(e) => setSearch(e.target.value)} className="sm:w-64" aria-label="Search payments" />
               <div className="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm" role="tablist" aria-label="Filter by payment status">
                 {(['all', 'paid', 'pending', 'failed'] as const).map((s) => (
