@@ -29,14 +29,14 @@ A full-stack subscription management platform built for **Lumen Quest 2.0**. Cus
 - **Overview:** current plan, days remaining, total spent, and payment count
 - **Smart suggestions:** cheaper long-term plans, more sessions per rupee, renewal reminders, and alerts for unpaid bills, all computed from the customer's own data
 - **Subscription control:** subscribe, switch plan, pause (remaining days are kept), resume, cancel
-- **Billing:** full payment history with filters, "Pay now" for pending or failed bills, and PDF invoice download
+- **Billing:** full payment history with status and date-range filters, "Pay now" for pending or failed bills, and PDF invoice download
 - **Profile:** edit name and phone; change password (current password required)
 
 ### Admin console
 - **Analytics dashboard:** revenue, customers, active subscriptions, churn rate, ARPU and failed payments, plus charts for revenue by month, new vs churned subscriptions and plan distribution, top customers, recent billing activity, and CSV export
-- **Customers:** search, status filter, pagination, and add customer (generates a temporary password)
+- **Customers:** search, status and date-range filters, pagination, CSV export, and add customer (generates a temporary password)
 - **Customer detail:** subscription and bill history; pause, resume or cancel; change plan; mark bills paid; mark the customer active or inactive
-- **Payments:** every bill across customers, filter by paid, pending or failed, mark as paid, CSV export
+- **Payments:** every bill across customers, filter by paid, pending or failed and by date range (presets or custom), mark as paid, CSV export
 - **Plan management:** create, edit, activate or deactivate, and delete plans (plans with subscription history are protected)
 
 ### Platform
