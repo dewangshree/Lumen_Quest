@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Download } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Modal, ModalBody, ModalFooter } from '@/components/ui/Modal';
@@ -65,6 +66,28 @@ function CustomersContent() {
   useEffect(() => { setPage(0); }, [search, statusFilter]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  // Download the currently filtered customers as CSV
+  const exportCsv = () => {
+    const header = ['ID', 'Name', 'Email', 'Phone', 'Account status', 'Plan', 'Subscription status', 'Subscribed since', 'Total spent (INR)', 'Last payment', 'Joined'];
+    const rows = filtered.map((c) => [
+      c.id, c.name, c.email, c.phone || '', c.account_status, c.subscription || '', c.subscription_status || 'none',
+      c.start_date || '', c.total_spent ?? 0, c.last_payment || '', String(c.created_at).slice(0, 10),
+    ]);
+    // Quote every cell; prefix formula-like values so spreadsheets don't execute them
+    const cell = (v: unknown) => {
+      let t = String(v ?? '');
+      if (/^[=+\-@]/.test(t)) t = `'${t}`;
+      return `"${t.replace(/"/g, '""')}"`;
+    };
+    const csv = '\uFEFF' + [header, ...rows].map((r) => r.map(cell).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers-${statusFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const stats = useMemo(() => ({
     total: customers.length,
@@ -166,6 +189,9 @@ function CustomersContent() {
                 <option value="expired">Expired</option>
                 <option value="none">No subscription</option>
               </select>
+              <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={exportCsv} disabled={loading || filtered.length === 0}>
+                Export CSV
+              </Button>
               <Button onClick={() => { setAddOpen(true); setFormError(null); }}>Add Customer</Button>
             </div>
           </div>
