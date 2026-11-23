@@ -1,4 +1,5 @@
 // Client for the Lumen Quest backend API.
+export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://lumen-quest-api.vercel.app').replace(/\/$/, '')
 
 const TOKEN_KEY = 'lq_access_token'
@@ -218,6 +219,8 @@ export async function request<T>(path: string, options: { method?: string; body?
 export const api = {
   login: (email: string, password: string) =>
     request<{ accessToken: string; refreshToken: string; user: ApiUser }>('/api/auth/login', { method: 'POST', body: { email, password } }),
+  googleLogin: (credential: string) =>
+    request<{ accessToken: string; refreshToken: string; user: ApiUser; created: boolean }>('/api/auth/google', { method: 'POST', body: { credential } }),
   register: (data: { name: string; email: string; password: string; phone?: string }) =>
     request<{ userId: number }>('/api/auth/register', { method: 'POST', body: data }),
   me: () => request<ApiUser & { created_at: string }>('/api/users/me', { auth: true }),

@@ -6,10 +6,13 @@ const rateLimit = require('express-rate-limit');
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || 'https://dewangshree.github.io,http://localhost:3000')
   .split(',').map((s) => s.trim()).filter(Boolean);
 
+// Any localhost/127.0.0.1 port is allowed for local development
+const LOCAL_DEV = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
 const corsMiddleware = cors({
   origin(origin, cb) {
     // No Origin header = server-to-server, curl, Swagger "try it out" on the same host
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || LOCAL_DEV.test(origin)) return cb(null, true);
     return cb(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
 import { Eye, EyeOff, Mail, Lock, User, Shield, Zap } from 'lucide-react'
 
 interface AuthFormData {
@@ -35,7 +36,17 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange, lockU
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const router = useRouter()
-  const { login, logout, register: registerUser, isLoading } = useAuthStore()
+  const { login, logout, register: registerUser, loginWithGoogle, isLoading } = useAuthStore()
+
+  const onGoogle = async (credential: string) => {
+    setFormError(null)
+    try {
+      await loginWithGoogle(credential)
+      router.push('/account')
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Google sign-in failed. Please try again.')
+    }
+  }
 
   const {
     register,
@@ -277,6 +288,10 @@ export function AuthForm({ mode, userType, onModeChange, onUserTypeChange, lockU
                 </div>
               )}
             </form>
+
+            {userType === 'customer' && (
+              <GoogleSignInButton text={mode === 'signup' ? 'signup_with' : 'signin_with'} onCredential={onGoogle} onError={setFormError} />
+            )}
 
             {/* Mode Toggle (admins can't self-register) */}
             {!(mode === 'login' && userType === 'admin') && (

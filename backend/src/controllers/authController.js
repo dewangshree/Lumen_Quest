@@ -61,3 +61,49 @@ exports.refreshToken = async (req, res) => {
     res.json({ accessToken });
   });
 };
+
+// Sign in with Google (customers only).
+// The frontend sends the Google ID token ("credential"); we verify it with Google,
+// check it was issued for our client ID, then sign in or create the customer account.
+const crypto = require('crypto');
+exports.google = async (req, res) => {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) return res.status(503).json({ message: 'Google sign-in is not configured' });
+    const { credential } = req.body || {};
+    if (!credential || typeof credential !== 'string') return res.status(400).json({ message: 'credential is required' });
+
+    const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+    if (!r.ok) return res.status(401).json({ message: 'Invalid Google sign-in. Please try again.' });
+    const info = await r.json();
+    const validIssuer = info.iss === 'accounts.google.com' || info.iss === 'https://accounts.google.com';
+    const notExpired = Number(info.exp) * 1000 > Date.now();
+    if (info.aud !== clientId || !validIssuer || !notExpired) {
+      return res.status(401).json({ message: 'Invalid Google sign-in. Please try again.' });
+    }
+    if (info.email_verified !== 'true' && info.email_verified !== true) {
+      return res.status(401).json({ message: 'Your Google email address is not verified.' });
+    }
+
+    const email = String(info.email).toLowerCase();
+    let user = await repo.findUserByEmail(email);
+    let created = false;
+    if (user && user.role === 'admin') {
+      return res.status(403).json({ message: 'Admins must sign in with their password on the Admin Login screen.' });
+    }
+    if (!user) {
+      const name = String(info.name || email.split('@')[0]).slice(0, 100);
+      // Random unusable password: the account signs in with Google (a password can be set later via reset)
+      const password_hash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+      await repo.createUser({ name, email, phone: null, password_hash, role: 'user' });
+      user = await repo.findUserByEmail(email);
+      created = true;
+      await sendWelcomeEmail({ name, email });
+    }
+    const { password_hash, ...profile } = user;
+    res.status(created ? 201 : 200).json({ ...signTokens(user), user: profile, created });
+  } catch (err) {
+    console.error(err);
+    res.status(err.status || 500).json({ message: err.status ? err.message : 'Internal server error' });
+  }
+};

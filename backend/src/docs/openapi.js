@@ -28,6 +28,11 @@ const ROUTES = [
     body: ref('LoginInput'), ok: json(ref('LoginResult')), errors: [400, 401, 429],
     description: 'Access tokens last 15 minutes, refresh tokens 7 days. After 5 failed attempts for an email, sign-in is blocked for 15 minutes.',
   }],
+  ['post', '/api/auth/google', 'Auth', 'Sign in with Google (customers)', {
+    body: { type: 'object', required: ['credential'], properties: { credential: { type: 'string', description: 'Google ID token from Google Identity Services' } } },
+    ok: json(ref('LoginResult')), errors: [400, 401, 403, 429],
+    description: 'Verifies the Google ID token, then signs in or creates the customer account. Admin accounts are rejected. Returns 503 until GOOGLE_CLIENT_ID is configured.',
+  }],
   ['post', '/api/auth/refresh', 'Auth', 'Exchange a refresh token for a new access token', {
     body: { type: 'object', required: ['token'], properties: { token: { type: 'string' } } },
     ok: json({ type: 'object', properties: { accessToken: { type: 'string' } } }), errors: [401, 403],

@@ -18,6 +18,7 @@ interface AuthState {
   hydrate: () => void
   login: (email: string, password: string) => Promise<User>
   register: (data: { name: string; email: string; password: string; phone?: string }) => Promise<User>
+  loginWithGoogle: (credential: string) => Promise<User>
   logout: () => void
   setUser: (user: User | null) => void
   setLoading: (loading: boolean) => void
@@ -66,6 +67,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true })
     try {
       const { accessToken, refreshToken, user } = await api.login(email, password)
+      session.save(accessToken, refreshToken, user)
+      const u = toUser(user)
+      set({ user: u, isAuthenticated: true })
+      return u
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  loginWithGoogle: async (credential) => {
+    set({ isLoading: true })
+    try {
+      const { accessToken, refreshToken, user } = await api.googleLogin(credential)
       session.save(accessToken, refreshToken, user)
       const u = toUser(user)
       set({ user: u, isAuthenticated: true })
