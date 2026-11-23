@@ -3,7 +3,7 @@
 A full-stack subscription management platform built for **Lumen Quest 2.0**. Customers can browse plans, subscribe, pause, cancel and download invoices. Admins get a live analytics dashboard plus tools to manage customers, payments and plans.
 
 **Live demo:** https://dewangshree.github.io/Lumen_Quest/  
-**API:** https://lumen-quest-api.vercel.app
+**API:** https://lumen-quest-api.vercel.app · **API docs (Swagger):** https://lumen-quest-api.vercel.app/api/docs
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
@@ -41,6 +41,10 @@ A full-stack subscription management platform built for **Lumen Quest 2.0**. Cus
 
 ### Platform
 - JWT authentication with refresh tokens and role-based access (`user` / `admin`) on both the API and the UI
+- Separate customer and admin sign-in screens; signing in with the other role's account is rejected
+- Security hardening: Helmet headers, CORS limited to the frontend, rate limiting (5 failed sign-ins per email per 15 min, 10 sign-ups per IP per hour, 600 requests per IP per 15 min), 100 kB body limit, input validation
+- Interactive API docs (OpenAPI 3 / Swagger UI) at `/api/docs`
+- Welcome email on signup and an account email with a temporary password for admin-created customers (SMTP; skipped if not configured)
 - Data persisted in PostgreSQL (Neon), seeded from the Lumen Quest dataset (`SubscriptionUseCase_Dataset.xlsx`)
 - Responsive layout, from a collapsible sidebar on desktop to an overlay menu on mobile
 - Auto-deploys on every push to `main`
@@ -114,6 +118,12 @@ Create `backend/.env.local`. For the existing Vercel project, `npx vercel env pu
 DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
 JWT_SECRET=any-long-random-string
 JWT_REFRESH_SECRET=another-long-random-string
+
+# Optional: transactional email (e.g. Gmail with an App Password)
+SMTP_USER=you@gmail.com
+SMTP_PASS=your-16-char-app-password
+# SMTP_HOST=smtp.gmail.com  SMTP_PORT=465  MAIL_FROM="SubsPro <you@gmail.com>"
+# CORS_ORIGINS=https://your-frontend.example,http://localhost:3000
 ```
 
 ```bash
@@ -173,7 +183,7 @@ Base URL: `https://lumen-quest-api.vercel.app`. Authenticated routes need `Autho
 | Backend | Vercel (`lumen-quest-api`) | Push to `main` → Vercel builds the `backend/` folder (project root directory = `backend`) |
 | Database | Neon Postgres | Connected to the Vercel project; `DATABASE_URL` is injected automatically |
 
-Secrets (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `DATABASE_URL`) live in the Vercel project's environment variables and are never committed.
+Secrets (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `DATABASE_URL`, and `SMTP_USER`/`SMTP_PASS` for email) live in the Vercel project's environment variables and are never committed.
 
 ---
 
@@ -191,4 +201,6 @@ Dataset dates are shifted so the latest record falls on today. The dataset's 100
 ## Known limitations
 
 - **Payments are simulated.** Checkout records a payment but no money is charged. A real gateway such as Razorpay or Stripe would be the next step.
-- **No password-reset emails.** There is no email service yet, so admins issue new temporary passwords instead.
+- **Emails need SMTP credentials.** Until `SMTP_USER`/`SMTP_PASS` are set on Vercel, welcome emails are skipped.
+- **No password-reset emails yet.** Admins issue new temporary passwords instead.
+- **Rate limits are per server instance.** Counters live in memory, so on serverless they reset on cold starts. Use a shared store such as Redis for strict limits.

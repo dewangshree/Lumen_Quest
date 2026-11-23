@@ -19,6 +19,8 @@ app.use(corsMiddleware);
 app.use(express.json({ limit: '100kb' }));
 app.use('/api', apiLimiter);
 
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // API documentation (OpenAPI 3 + Swagger UI)
 app.get('/api/openapi.json', (req, res) => res.json(openapi));
 app.get('/api/docs', (req, res) => {
